@@ -9,5 +9,4 @@ for( i in packs ) {
     library(i, character.only = TRUE)
 }
 rm(packs)
-
 clean_workspace <- c(ls(), "clean_workspace")
