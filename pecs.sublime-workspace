@@ -4,6 +4,18 @@
 		"selected_items":
 		[
 			[
+				"treat",
+				"treatment_range"
+			],
+			[
+				"coef",
+				"coef_2_compare"
+			],
+			[
+				"data",
+				"data_to_fit"
+			],
+			[
 				"paramet",
 				"parameter_matrix"
 			],
@@ -304,10 +316,6 @@
 				"outcome_formula"
 			],
 			[
-				"data",
-				"data_mf"
-			],
-			[
 				"Var",
 				"Var3"
 			],
@@ -506,14 +514,6 @@
 			[
 				"variable",
 				"variables_in_outcome"
-			],
-			[
-				"n2",
-				"n2 = \tArguments"
-			],
-			[
-				"regimeswi",
-				"regimes_without_campaign"
 			]
 		]
 	},
@@ -892,12 +892,28 @@
 		"selected_items":
 		[
 			[
-				"synt matl",
-				"Set Syntax: MATLAB"
+				"synt stat",
+				"Set Syntax: Stata"
 			],
 			[
 				"install",
 				"Package Control: Install Package"
+			],
+			[
+				"theme",
+				"UI: Select Theme"
+			],
+			[
+				"select theme",
+				"UI: Select Theme"
+			],
+			[
+				"set theme",
+				"UI: Select Theme"
+			],
+			[
+				"synt matl",
+				"Set Syntax: MATLAB"
 			],
 			[
 				"synt r",
@@ -1138,10 +1154,6 @@
 			[
 				"outlin",
 				"Browse Mode: Outline (Right)"
-			],
-			[
-				"theme",
-				"ColorSchemeSelector: Select Color Scheme"
 			],
 			[
 				"packa inte",
@@ -1390,18 +1402,6 @@
 			[
 				"packa",
 				"Package Control: Upgrade Package"
-			],
-			[
-				"repl py",
-				"SublimeREPL: Python"
-			],
-			[
-				"repl R",
-				"SublimeREPL: R"
-			],
-			[
-				"select c",
-				"ColorSchemeSelector: Select Color Scheme"
 			]
 		],
 		"width": 444.0
@@ -1432,10 +1432,22 @@
 	},
 	"expanded_folders":
 	[
-		"/Users/dag/github/pecs"
+		"/Users/dag/github/pecs",
+		"/Users/dag/github/pecs/nbk",
+		"/Users/dag/github/pecs/prestudies",
+		"/Users/dag/github/pecs/prestudies/ellger",
+		"/Users/dag/github/pecs/prestudies/eppner",
+		"/Users/dag/github/pecs/src",
+		"/Users/dag/github/pecs/src/r",
+		"/Users/dag/github/pecs/src/r/replication"
 	],
 	"file_history":
 	[
+		"/Users/dag/github/pecs/src/r/master.R",
+		"/Users/dag/github/pecs/src/r/replication/01_replicate_using_plm.R",
+		"/Users/dag/github/pecs/nbk/master_nbk.md",
+		"/Users/dag/github/pecs/src/r/replication/02_generate_between_models.R",
+		"/Users/dag/github/pecs/prestudies/ellger/1_Tillman_DirekteReplikation.R",
 		"/Users/dag/github/coursera/ml_ng/week7/ex6.m",
 		"/Users/dag/test.py",
 		"/Users/dag/KiteOnboarding.py",
@@ -1558,12 +1570,7 @@
 		"/Users/dag/Dropbox/data/diss/out/chapter03/tbl/tblModelFit.tex",
 		"/Users/dag/Dropbox/data/diss/out/chapter03/marEff_violence_fromSTATA.csv",
 		"/Users/dag/Dropbox/data/diss/out/chapter03/fig/line_marEff_restrictionsXviolence_manual.pdf",
-		"/Users/dag/Dropbox/data/diss/out/chapter03/margEff_violenceXrestrictions_fromSTATA.csv",
-		"/Users/dag/Dropbox/data/diss/out/chapter03/margEff_restrictionsXviolence_fromSTATA.csv",
-		"/Users/dag/github/diss/r/chapter03/04_presentation/01_02_EDA_Marginal_RestrictionsViolence.R",
-		"/Users/dag/github/diss/01_operationalization",
-		"/Users/dag/github/diss/r/chapter03/01_rejectMCAR/02_lme_differenceInMeans.R",
-		"/Users/dag/github/diss/r/chapter03/04_presentation/03_03_ModelFitStatistics_SepPlot.R"
+		"/Users/dag/Dropbox/data/diss/out/chapter03/margEff_violenceXrestrictions_fromSTATA.csv"
 	],
 	"find":
 	{
@@ -1727,8 +1734,8 @@
 	"show_minimap": false,
 	"show_open_files": true,
 	"show_tabs": true,
-	"side_bar_visible": true,
-	"side_bar_width": 265.0,
+	"side_bar_visible": false,
+	"side_bar_width": 239.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
