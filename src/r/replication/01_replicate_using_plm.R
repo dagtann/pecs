@@ -4,7 +4,7 @@
 # ================================================================================
 # Prepare workspace
 rm(list = ls()[!(ls() %in% clean_workspace)])
-packages <- c("foreign", "plm")
+packages <- c("foreign", "plm", "sandwich", "lmtest")
 for(i in packages){
     if(!(i %in% rownames(installed.packages()))) {
         cat("Now installing required package:\\t", i)
@@ -16,16 +16,13 @@ for(i in packages){
 # Declare string constants
 panel_id <- c("country", "year2")
 control <- paste(
-    c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome"),
+    c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome", "year2"),
     collapse = " + "
 )
 treatment <- c("pec1", "pec20", "vote_pec", "smallpec+largepec")
 response <- "turnout"
 
-# Load and prepare data
-tillman <- read.dta(
-    file.path(path_project, "prestudies", "ellger", "tilmann_merger.dta")
-)
+# Prepare data
 data_to_fit <- pdata.frame(tillman, index = c("country", "year2"))
 
 fitted_models <- list()
@@ -39,6 +36,9 @@ for(i in 1:length(treatment)) {
     )
 }
 names(fitted_models) <- treatment
-lapply(fitted_models, coef)
+lapply(fitted_models, summary)
+vcovBK(fitted_models[[1]], cluster = c("group"))
+coeftest(fitted_models[[1]], vcov = vcovBK(fitted_models[[1]], cluster = c("group")))
+coeftest(fitted_models[[3]], vcov = vcovBK(fitted_models[[3]], cluster = c("group")))
 ## END
 ## Coefficients replicate exactly.
