@@ -22,8 +22,8 @@ Concluded replication. Results can consistently be reproduced, but turn out not 
 4. Jacknife: 
 
 ### ToDo:
-- Generate the within plot and sort panels by effect estimate
-- Generate output tables for pec1 and vote_pec with time dummies and interactios
-- draw a marginal effect plot for the decreasing return from PECs
+- Generate the within plot and sort panels by effect estimate √
+- Generate output tables for pec1 and vote_pec with time dummies and interactios √
+- draw a marginal effect plot for the decreasing return from PECs √
 - Clean up code files
 - Implement permutation tests
