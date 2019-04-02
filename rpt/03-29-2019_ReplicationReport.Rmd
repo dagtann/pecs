@@ -1,0 +1,76 @@
+---
+title: "Replication Results"
+author: "Dag Tanneberg"
+date: "1 April 2019"
+output: word_document
+---
+```{r, options_chunk, include=FALSE}
+knitr::opts_chunk$set(
+    cache = FALSE, eval = TRUE, echo = FALSE, fig.align = "center",
+    fig.width = 12, fig.height = 8, warning = FALSE, message = FALSE
+)
+source("~/github/pecs/src/r/master.R")
+```
+
+
+## Introduction
+
+Tillman argues that pre-electoral coalition increase the identifiability of possible governments and thereby augment electoral decisiveness. In effect, turnout should increase whenever pre-electoral coalitions form. To support his claim, Tillman reports fixed-effects panel regressions which predict turnout from various specifications of the existence and strength of pre-electoral coalitions. In the following, I reanalyze his contribution from several angles. In doing so, I concentrate on Tillman’s primary predictors: the presence of a pre-electoral coalition and the voting percentage a pre-electoral coalition achieved. My brief assessment exposes major flaws in Tillman’s modeling strategy.
+
+## Can the data support any causal effect at all?
+
+Generally speaking, fixed-effects panel regression models estimate the causal effect of some treatment by comparing the outcome on the same observation unit at different points in time. Consequently, a certain amount of (co-)variation within the units is required to estimate any causal effect. The figure below shows how within-differences in turnout and PECs align for every country in the data, and it gives reason to doubt Tillman’s analysis.
+
+```{r, execute_varianceDecomposition, fig.show = "hide"}
+source(
+    file.path(
+        path_project, "src", "r", "replication",
+        "05_varianceDecomposition_ReponseVsTreatment.R"
+    )
+)
+```
+
+![](/Users/dag/github/pecs/out/scatter_VarianceDecomposition_TreatmentVsOutcome.png)
+
+1. The correlation between turnout and PECs varies substantially across countries,
+    ranging from indirect (e.g. Italy and New Zealand) to null (e.g. Denmark and
+    Japan) to direct (e.g., Germany and Greece). It should thus be questioned how 
+    representative of the data Tillman’s reported mean effect is.
+2. On many occasions the correlation depends on outliers. For instance, the figure
+    implies a direct association between the formation of PECs and turnout in the
+    UK. However, the implication turns entirely on the 1983 and 1987 elections.
+    Likewise, a strong association between turnout and the result for PECs is
+    implied for Portugal. Again, the implication depends entirely on just two
+    elections: 1979 and 1980.
+3. Not all countries contribute equally Tillman’s results. Frist, pre-electoral
+    coalitions formed in every French and Israelian election. In other words, the
+    treatment is constant and these countries drop out of the analysis. Moreover,
+    the association between treatment and response is weak or non-existent in
+    almost half of all countries. Hence, Tillman’s results may be driven by strong
+    positive outliers such as Greece respectively Portugal. Jackknife resampling
+    supports that impression, even though it does not invalidate Tillman’s
+    conclusions.
+
+```{r, execute_jackknife}
+source(file.path(path_project, "src", "r", "replication", "06_jacknife_fe.R"))
+```
+
+![](/Users/dag/github/pecs/out/pointrange_jackknife_treatments.png)
+
+## The effect of PECs is spurious
+
+Fixed effects analyses should routinely safeguard against mistaking such trends
+in the outcome for treatment effects. More precisely, turnout has been declining
+for decades in practically every established democracy. Despite that well known
+fact, Tillman does not include time dummies in his analysis. Yet, as can be seen
+from Models 2 and 5 in Table 1 the association between PECs and turnout becomes
+indistinguishable from zero once year fixed-effects are included.
+
+Moreover, treatment effects may vary over time. In other words, the return
+from PECs to turnout may change over the observation period. Models 3 and 6 in the
+table follow up on this possibility and interact the treatment with the year
+fixed-effects. However, since the interaction terms are collectively
+indistinguishable from 0, the statistical evidence does not support changing
+returns from PECs. 
+
+KABLE STUFF

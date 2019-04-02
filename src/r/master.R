@@ -1,6 +1,8 @@
 rm(list = ls())
 options(help_type = "html")
+
 path_project <- file.path("~", "github", "pecs")
+base_size <- 18
 
 packs <- c("tidyverse", "foreign")
 for ( i in packs ) {

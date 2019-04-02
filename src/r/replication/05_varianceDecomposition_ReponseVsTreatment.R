@@ -1,4 +1,5 @@
 library("gridExtra")
+
 btw_dta <- select(tillman, country, pec1, vote_pec, turnout) %>%
     group_by(country) %>%
     summarise_all(.funs = mean, na.rm = TRUE) %>%
@@ -28,7 +29,8 @@ p1 <- ggplot(data = tillman, aes(x = wi_pec1, y = wi_turnout)) +
     geom_smooth(method = "lm", se = FALSE) +
     geom_point(alpha = .6) +
     facet_wrap(~ country_f, ncol = 3) +
-    labs(x = "PEC in election?", y = "Turnout")
+    labs(x = "PEC in election?", y = "Turnout") +
+    theme_grey(base_size = base_size)
 
 # (b) vote_pec
 for(i in countries){
@@ -45,7 +47,8 @@ p2 <- ggplot(data = tillman, aes(x = wi_vote_pec, y = wi_turnout)) +
     geom_smooth(method = "lm", se = FALSE) +
     geom_point(alpha = .6) +
     facet_wrap(~ country_f, ncol = 3) +
-    labs(x = "Percent of vote for PEC", y = "Turnout")
+    labs(x = "Percent of vote for PEC", y = "Turnout")  +
+    theme_grey(base_size = base_size)
 p_total <- grid.arrange(p1, p2, ncol = 2)
 ggsave(
     file.path(path_project, "out", "scatter_VarianceDecomposition_TreatmentVsOutcome.png"),

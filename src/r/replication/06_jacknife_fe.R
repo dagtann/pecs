@@ -1,3 +1,4 @@
+library("plm")
 library("lmtest")
 
 execute_jackknife <- function(drop, from, formula, data){
@@ -79,6 +80,7 @@ p <- ggplot(data = pdta,
     geom_pointrange() +
     facet_wrap(~treatment_f, scales = "free_y", ncol = 1) +
     labs(y = "Estimated effect & CI95\nwhen country is dropped") +
+    theme_grey(base_size = base_size) +
     theme(
         axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
         axis.title.x = element_blank(),
@@ -88,3 +90,4 @@ p <- ggplot(data = pdta,
 ggsave(file.path(path_project, "out", "pointrange_jackknife_treatments.png"))
 # housekeeping
 detach(package:plm)
+detach(package:lmtest)
