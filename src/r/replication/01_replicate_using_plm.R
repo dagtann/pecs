@@ -16,7 +16,7 @@ for(i in packages){
 # Declare string constants
 panel_id <- c("country", "year2")
 control <- paste(
-    c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome", "year2"),
+    c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome"),
     collapse = " + "
 )
 treatment <- c("pec1", "pec20", "vote_pec", "smallpec+largepec")

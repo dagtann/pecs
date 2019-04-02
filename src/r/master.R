@@ -10,7 +10,7 @@ for ( i in packs ) {
         installed.packages(i, dependencies = TRUE)
     library(i, character.only = TRUE)
 }
-rm(packs)
+rm(packs, i)
 
 tillman <- read.dta(
     file.path(path_project, "prestudies", "ellger", "tilmann_merger.dta")
