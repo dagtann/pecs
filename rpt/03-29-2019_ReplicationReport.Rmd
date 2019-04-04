@@ -34,7 +34,7 @@ source(
 
 1. The correlation between turnout and PECs varies substantially across countries,
     ranging from indirect (e.g. Italy and New Zealand) to null (e.g. Denmark and
-    Japan) to direct (e.g., Germany and Greece). It should thus be questioned how 
+    Japan) to direct (e.g., Germany and Greece). It should thus be questioned how
     representative of the data Tillman’s reported mean effect is.
 2. On many occasions the correlation depends on outliers. For instance, the figure
     implies a direct association between the formation of PECs and turnout in the
@@ -57,6 +57,33 @@ source(file.path(path_project, "src", "r", "replication", "06_jacknife_fe.R"))
 
 ![](/Users/dag/github/pecs/out/pointrange_jackknife_treatments.png)
 
+## The model systematically misfits several countries
+
+```{r, calulateTrainingRmse}
+source(file.path(path_project, "src", "r", "replication", "09_CalculateTrainingError.R"))
+```
+
+Tillman's analyses produce training RMSEs[^1] of `r sprintf("%.3f", rmse[1])` and
+`r sprintf("%.3f", rmse[2])` for the existence of PECs respectively their
+vote. Compared to the standard deviation of the demeaned dependent variable
+(`r sprintf("%.3f", sd(data_to_fit$wi_turnout, na.rm = TRUE))`) the average
+amount of error is reduced by about fourteen per cent. Once again, a country
+based analysis adds nucance. The figure below plots the RMSE for each country
+and treamtent, horizontal lines denote the sample based equivalents. The graph
+demonstrates:
+
+1. Model fit does not noticably depend on the predictor of theoretical interest.
+2. There is a group of countries (Italy to Sweden) which fits the model suspiciously well. We should
+   theorize what these countries have in common.
+3. There is a second group of countries which does not to fit the model at all. On the one hand,
+    misfit is expected for Israel and France because they do not inform the model (see above).
+    On the other hand, Portugal's poor performance gives reason for concern because this country is
+    also highly influential.
+
+[^1]: The Root Mean Square Error is defined as
+$\frac{1}{N}\sum_{i=1}^N(y_i - \hat{y}_i)^2$. Loosely speaking, it states the
+average error of the model.
+
 ## The effect of PECs is spurious
 
 Fixed effects analyses should routinely safeguard against mistaking such trends
@@ -71,6 +98,4 @@ from PECs to turnout may change over the observation period. Models 3 and 6 in t
 table follow up on this possibility and interact the treatment with the year
 fixed-effects. However, since the interaction terms are collectively
 indistinguishable from 0, the statistical evidence does not support changing
-returns from PECs. 
-
-KABLE STUFF
+returns from PECs.

@@ -4,12 +4,40 @@
 		"selected_items":
 		[
 			[
-				"treat",
-				"treatment_range"
+				"robust",
+				"robust_se"
+			],
+			[
+				"fit_",
+				"fit_4"
+			],
+			[
+				"year",
+				"year_f"
+			],
+			[
+				"fit",
+				"fit_2"
+			],
+			[
+				"at",
+				"atmeans"
+			],
+			[
+				"dta",
+				"data_to_fit"
 			],
 			[
 				"coef",
-				"coef_2_compare"
+				"coef_matrix"
+			],
+			[
+				"coef_",
+				"coef_matrix"
+			],
+			[
+				"treat",
+				"treatment_range"
 			],
 			[
 				"data",
@@ -42,10 +70,6 @@
 			[
 				"post_",
 				"post_draws"
-			],
-			[
-				"fit_",
-				"fit_inter"
 			],
 			[
 				"fit_x",
@@ -328,10 +352,6 @@
 				"control_values"
 			],
 			[
-				"coef_",
-				"coef_heck1"
-			],
-			[
 				"dta_",
 				"data_mf"
 			],
@@ -494,31 +514,38 @@
 			[
 				"mul",
 				"multiwayvcov\tInstalled Package"
-			],
-			[
-				"p_xconst",
-				"p_xconst_lag"
-			],
-			[
-				"influence",
-				"influencePlot\t{car}"
-			],
-			[
-				"residual",
-				"residualPlot\t{car}"
-			],
-			[
-				"dwT",
-				"durbinWatsonTest\t{car}"
-			],
-			[
-				"variable",
-				"variables_in_outcome"
 			]
 		]
 	},
 	"buffers":
 	[
+		{
+			"file": "src/r/master.R",
+			"settings":
+			{
+				"buffer_size": 549,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "nbk/master_nbk.md",
+			"settings":
+			{
+				"buffer_size": 1508,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/r/replication/08_timeDependency_decresingReturnsFromPec1.R",
+			"settings":
+			{
+				"buffer_size": 3008,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		}
 	],
 	"build_system": "",
 	"build_system_choices":
@@ -892,6 +919,18 @@
 		"selected_items":
 		[
 			[
+				"close ",
+				"Project: Close"
+			],
+			[
+				"synt mark",
+				"Set Syntax: Markdown"
+			],
+			[
+				"synt R",
+				"Set Syntax: R"
+			],
+			[
 				"synt stat",
 				"Set Syntax: Stata"
 			],
@@ -930,10 +969,6 @@
 			[
 				"send code",
 				"SendCode: Choose Program"
-			],
-			[
-				"synt R",
-				"Set Syntax: R"
 			],
 			[
 				"synt matla",
@@ -1394,14 +1429,6 @@
 			[
 				"synt mmd",
 				"Set Syntax: MultiMarkdown"
-			],
-			[
-				"syn",
-				"Set Syntax: R"
-			],
-			[
-				"packa",
-				"Package Control: Upgrade Package"
 			]
 		],
 		"width": 444.0
@@ -1434,15 +1461,17 @@
 	[
 		"/Users/dag/github/pecs",
 		"/Users/dag/github/pecs/nbk",
+		"/Users/dag/github/pecs/out",
 		"/Users/dag/github/pecs/prestudies",
-		"/Users/dag/github/pecs/prestudies/ellger",
-		"/Users/dag/github/pecs/prestudies/eppner",
 		"/Users/dag/github/pecs/src",
 		"/Users/dag/github/pecs/src/r",
 		"/Users/dag/github/pecs/src/r/replication"
 	],
 	"file_history":
 	[
+		"/Users/dag/github/pecs/src/r/replication/07_compare_pooled_fe_re_models.R",
+		"/Users/dag/github/stat-learning/ch2/answers",
+		"/Users/dag/github/pecs/doc/GOLDER 2006_TheLogicOfPreElectoralCoalitions.md",
 		"/Users/dag/github/pecs/src/r/master.R",
 		"/Users/dag/github/pecs/src/r/replication/01_replicate_using_plm.R",
 		"/Users/dag/github/pecs/nbk/master_nbk.md",
@@ -1567,10 +1596,7 @@
 		"/Users/dag/github/diss/r/chapter03/03_heckmanDoubleProbit.R/04_generateClusterPairsConfidenceIntervals.R",
 		"/Users/dag/github/diss/00_master.aux:0 Label `fig",
 		"/Users/dag/Dropbox/data/diss/out/chapter03/tbl/iterLrTest.txt",
-		"/Users/dag/Dropbox/data/diss/out/chapter03/tbl/tblModelFit.tex",
-		"/Users/dag/Dropbox/data/diss/out/chapter03/marEff_violence_fromSTATA.csv",
-		"/Users/dag/Dropbox/data/diss/out/chapter03/fig/line_marEff_restrictionsXviolence_manual.pdf",
-		"/Users/dag/Dropbox/data/diss/out/chapter03/margEff_violenceXrestrictions_fromSTATA.csv"
+		"/Users/dag/Dropbox/data/diss/out/chapter03/tbl/tblModelFit.tex"
 	],
 	"find":
 	{
@@ -1605,8 +1631,142 @@
 	"groups":
 	[
 		{
+			"selected": 1,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "src/r/master.R",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 549,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								514,
+								514
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.r"
+								},
+								{
+									"characters": ".",
+									"selector": "text.html.markdown.rmarkdown"
+								}
+							],
+							"git_gutter_is_enabled": true,
+							"lsp_language":
+							{
+								"rlang": "r"
+							},
+							"show_definitions": false,
+							"syntax": "Packages/R/R.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "nbk/master_nbk.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1508,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								197,
+								197
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"syntax": "Packages/MarkdownEditing/Markdown.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/r/replication/08_timeDependency_decresingReturnsFromPec1.R",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3008,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3005,
+								3005
+							]
+						],
+						"settings":
+						{
+							"SL.17.region_keys":
+							[
+							],
+							"SL.38.region_keys":
+							[
+							],
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.r"
+								},
+								{
+									"characters": ".",
+									"selector": "text.html.markdown.rmarkdown"
+								}
+							],
+							"git_gutter_is_enabled": true,
+							"lsp_language":
+							{
+								"rlang": "r"
+							},
+							"show_definitions": false,
+							"syntax": "Packages/R/R.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 412.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				}
 			]
 		}
 	],
@@ -1734,8 +1894,8 @@
 	"show_minimap": false,
 	"show_open_files": true,
 	"show_tabs": true,
-	"side_bar_visible": false,
-	"side_bar_width": 239.0,
+	"side_bar_visible": true,
+	"side_bar_width": 388.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
