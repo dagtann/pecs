@@ -3,6 +3,7 @@ rm(list = ls())
 options(help_type = "html")
 
 path_project <- file.path("~", "github", "pecs")
+path_archive <- file.path("~", "OneDrive", "data", "archive")
 base_size <- 18 # plot character size
 
 packs <- c("tidyverse")
