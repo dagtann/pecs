@@ -1,0 +1,75 @@
+---
+author: "Dag Tanneberg"
+title: "Salvage Tillman's analysis"
+output: pdf_document
+---
+
+```{r, options_chunk, include=FALSE}
+knitr::opts_chunk$set(
+    cache = FALSE, eval = TRUE, echo = FALSE, fig.align = "center",
+    fig.width = 12, fig.height = 8, warning = FALSE, message = FALSE
+)
+source("~/github/pecs/src/r/master.R")
+```
+
+# Trend in Turnout
+
+## What's the grand picture?
+
+Turnout has near universally declined. Starting from 1970, participation in general elections decreased from an average `r sprintf("%.2f", 100 * mean(tillman$turnout[tillman$year == 1970]))` per cent in 1970 to `r sprintf("%.2f", 100 * mean(tillman$turnout[tillman$year == 2011]))` per cent in 2011. The figure below vizualizes the development in (demeaned) turnout for the entire data as
+well as each individual country.
+
+- For obvious reasons, turnout has not declined in Australia, Belgium, or
+    Luxembourg. Neither did Iceland and Denmark experience a marked decline.
+- Where turnout did decline, it did so to varying extent, at different speeds,
+    and not linearly.
+
+```{r, plotDecomposedTrend}
+source(
+    file.path(path_project, "src", "r", "salvage", "01_detrend_turnout.R")
+)
+```
+
+## What modelling options are on the table?
+
+[Jeff Wooldridge](https://www.statalist.org/forums/forum/general-stata-discussion/
+general/1308432-detrended-variable-in-a-panel-dataset) recommends to include
+a full set of year dummies. This solution proves the Tillman's reported
+association between turnout and pre-electoral spurious. However, given the
+long-panel nature of the data, year dummies might simply suck up too much
+variance. Alternative detrending solutions include: (a) period dummies, e.g.
+decades; (b) a population level trends, (c) country specific growth curves,
+(d) a substantive model of the trend. I report solutions (a) through (c) below.
+
+```{r}
+tillman <- mutate(
+    tillman, decade = Hmisc::cut2(year, cuts = c(1980, 1990, 2000))
+)
+data_to_fit <- pdata.frame(tillman, index = c("country", "year2"))
+fit_published <- lm(
+    turnout ~ pec1 + enep + disprop * pr + plurality * closeness + growth + lnincome + country,
+    data = data_to_fit
+)
+fit_year <- update(fit_published, . ~ . + factor(year))
+fit_decades <- update(fit_published, . ~ . + decade)
+anova(fit_published, fit_year, fit_decades)
+sapply(list(fit_published, fit_year, fit_decades), AIC)
+sapply(list(fit_published, fit_year, fit_decades), BIC)
+
+fit_spline_all <- update(fit_published, . ~ . + bs(year, 3))
+fit_spline_individual <- update(fit_published, . ~ . + bs(year, 3) * country)
+sapply(list(fit_published, fit_decades, fit_spline_all, fit_spline_individual), AIC)
+sapply(list(fit_published, fit_decades, fit_spline_all, fit_spline_individual), BIC)
+```
+
+
+
+
+
+
+
+
+
+
+
+
