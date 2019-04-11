@@ -17,7 +17,10 @@ tillman <- select(tillman,
     mutate(year2 = year * 10 + duplicated(
         paste(tillman$country, tillman$year, sep = ":"))
     ) %>%
-    filter(!is.na(country) & (country != ""))
+    filter(
+        !is.na(country) & (country != "") & 
+        !(country %in% c("Australia", "Canada", "Luxembourg"))
+    )
 bw <- select(tillman, -year, -year2) %>%
     group_by(country) %>%
     summarize_all(list(bw = mean)) %>%
