@@ -1,8 +1,13 @@
 ---
-title: "Salvage"
-author: "Dag Tanneberg"
-output: pdf_document
+date: 04-12-2019
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
 ---
+
+\tableofcontents
+\newpage
 
 ```{r, options_chunk, include=FALSE}
 knitr::opts_chunk$set(
@@ -12,51 +17,118 @@ knitr::opts_chunk$set(
 source("~/github/pecs/src/r/master.R")
 ```
 
-# Trends in the data
+\section{Trends in the data}
 
-## What's the grand picture?
+\subsection{What's the grand picture?}
+
 ```{r, detrendAnalysis, include = FALSE}
 source(file.path(path_project, "src", "r", "salvage", "01_detrended_analysis.R"))
 ```
 
-![Trends in Turnout](~/github/pecs/out/scatter_smoother_detrendTurnout.pdf)
-
-Turnout has been declining for decades. Starting in 1970, participation in general 
+Turnout has been declining for decades. Starting in 1970, participation in general
 elections decreased from an average
 `r sprintf("%.2f", 100 * mean(tillman$turnout[tillman$year == 1970]))` per cent to
-`r sprintf("%.2f", 100 * mean(tillman$turnout[tillman$year == 2011]))` per cent in 
-2011. The figure above shows the development for all democracies in the data. With 
+`r sprintf("%.2f", 100 * mean(tillman$turnout[tillman$year == 2011]))` per cent in
+2011. The figure above shows the development for all democracies in the data. With
 the exceptions of Belgium and Denmark turnout has declined across the board
 although differences in speed, magnitude, and monotonicity of the decline
 are appearent.
 
-Importantly, trends that parallel turnout plague Tillman's two key predictors: the
-formation of pre-electoral coalitions and their voting percentage. The figure
-below shows Z-standardized versions of the fixed-effect transformed response and
-its two key predictors. Although developments may not always align to 100 percent,
-e.g., Italy, cases like Germany, the Netherlands, Greece or Denmark make the
-potential for confounding trends in Tillman's analysis abundantly clear.
+\begin{figure}[ht]
+    \caption{Trends in Turnout}
+    \includegraphics[width=\textwidth]{~/github/pecs/out/scatter_smoother_detrendTurnout.pdf}
 
-![Shared Trends in Treatment and Response](~/github/pecs/out/line_commonTrend_Pec1_Turnout.pdf)
+    \textbf{Note}: Confidence envelope at the .95 level.
+\end{figure}
+
+Importantly, trends that parallel turnout plague Tillman's two key predictors:
+the formation of pre-electoral coalitions and their voting percentage. The
+figure below shows Z-standardized versions of the fixed-effect transformed
+response and its two key predictors. Although developments may not always align
+to 100 percent, e.g., Italy, cases like Germany, the Netherlands, Greece or
+Denmark highlight the potential for confounding trends in Tillman's analysis
+clear.
+
+\begin{figure}[ht]
+    \caption{Shared Trends in Treatments and Response}
+    \includegraphics[width=\textwidth]{~/github/pecs/out/line_commonTrend_Pec1_Turnout.pdf}
+
+    \small{\textbf{Note}: Rug plots indicate election years.}
+\end{figure}
 
 \newpage
 
 
 ## What do the detrended results look like?
 
+Several options to detrend panel data are on the table.
+\begin{enumerate}
+    \item Indicator variables for observations can account for all apparent
+        trends in the data. However, they reduce statistical power quite a bit.
+    \item Reduced form trend models of observation time, e.g., polynomials or
+        splines, are easily implemented, but quickly overfit the data
+    \item Sophisticated error structures, e.g., AR(1), correct standard
+        errors and p-values. Unfortunately, they ignore the biased effect
+        estimate.
+    \item A set of lagged responses removes any trend up to the cardinality of
+        the set, but it will bias results if the trend is more complex than
+        that.
+    \item Substantive models of the trend in the outcome. However, if those
+        models are to reduce confoundedness then they should yield leverage on
+        the treatment(s) as well.
+\end{enumerate}
+
+Keeping in mind our paper's purpose -- a replication and data feature --,
+options one and two strike as most promising. Table
+\ref{tbl:DetrendedRegressionResults} replicates Tillman's entire analysis using
+cubic base [splines](https://en.wikipedia.org/wiki/B-spline) with three
+knots.\footnote{
+    The last report already presented the dummy variable approach.
+}
+The table reports panel robust standard errors, clustered by country. There are
+three take-away messages.
+
 ```{r, results = "asis"}
 texreg(fitted_models,
     digits = 3,
     override.se = lapply(bk_se, function(x){sqrt(diag(x))}),
-    override.p = lapply(bk_se, function(x){sqrt(diag(x))}),
+    override.p = bk_pval,
     custom.coef.names = c("PEC", "Parties", "Disproportionality", "PR",
-        "Plurality", "Closeness", "Economic Growth", "Income", "Spline 1",
+        "Plurality", "Closeness", "Economic Growth", "log(Income)", "Spline 1",
         "Spline 2", "Spline 3", "Spline 4",
         "PR $\\times$ Disproprtionality", "Plurality $\\times$ Closeness",
         "PEC $>$ 20\\%", "Vote PEC", "Small PEC", "Large PEC"
     ),
-    reorder.coef = c(1, 15, 16, 17, 18, 2:14)
+    reorder.coef = c(1, 15, 16, 17, 18, 2:14),
+    caption = "Detrended Regression Results", caption.above = TRUE,
+    label = "tbl:DetrendedRegressionResults"
 )
 ```
 
+\begin{enumerate}
+    \item As before, the \textit{formation} of pre-electoral coalitions does
+        not boost turnout once trends are taken into account. The estimated
+        effect on PEC approaches zero and more sophisticated trend
+        formulations will not substantively change this outcome: Shared trends
+        confound Tillman's pivotal analysis.
+    \item Interestingly, Models 2 through 4 imply that strong pre-electoral
+        coalitions still boost turnout. According to Model 3, every additional
+        vote percentage point which goes to PECS increases turnout by $0.027$
+        percentage points. Moreover, Models 2 and 4 strongly suggest that this
+        effect turns strong pre-electoral coalitions, i.e. PECs that account
+        for at least 20 percent of the vote.
 
+        However, voting results for PECs are downstream from turnout.
+        Therefore, it is very likely that something else but time confounds
+        these effects. Suspects range from institutions and party system
+        polarization to observable properties of PECS, e.g. former cabinet
+        status of its members or coalition type.
+    \item Once the analysis has been detrended, many of the remaining
+        regressors tend towards zero. At least, most of them do not flip sign.
+        Consequently, not everything about Tillman's analysis is confounded by
+        trends. There is something to be salvaged.
+\end{enumerate}
+
+\section{Rethinking institutional controls}
+
+\section{Bringing polarization back in}

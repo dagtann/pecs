@@ -6,7 +6,7 @@
 rm(list = ls()[!(ls() %in% clean_workspace)])
 packs <- c("car", "plm", "splines", "texreg", "knitr")
 missing <- which(!(packs %in% rownames(installed.packages())))
-if(any(missing)) {
+if (any(missing)) {
     cat("Installing missing packages: ", packs[missing], "\n")
     install.packages(packs[missing], dependencies = TRUE)
 }
@@ -23,7 +23,7 @@ response <- "turnout"
 yr_range <- as.numeric(min(tillman$year):max(tillman$year))
 knots_num <- 3
 knots_loc <- quantile(yr_range, probs = seq(0, 1, length.out = knots_num))
-yr_spline_labs <- paste0(paste0("yr_spline", 1:(knots_num+1)))
+yr_spline_labs <- paste0(paste0("yr_spline", 1:(knots_num + 1)))
 
 # Data objects
 yr_splines <- bs(yr_range, knots = knots_loc[-c(1, knots_num)], degree = 3)
@@ -54,15 +54,17 @@ pdta <- rbind.data.frame(tillman, tmp)
 p <- ggplot(data = pdta, aes(x = year, y = turnout_wi)) +
     geom_point() +
     geom_ribbon(
-        data = yhat, aes(y = NULL, ymin = lwr, ymax = upr, x = yr_range), alpha = .4
+        data = yhat, aes(y = NULL, ymin = lwr, ymax = upr, x = yr_range),
+        alpha = .4
     ) +
     geom_line(
         data = yhat, aes(y = fit, x = yr_range, colour = "All countries")
     ) +
     geom_smooth(
-        data = subset(pdta, country != "All"),
-        method = "lm", formula = y ~ bs(x, knots = knots_loc[-c(1, knots_num)], degree = 3), se = FALSE,
-        aes(colour = "Single country")
+        data = subset(pdta, country != "All"), aes(colour = "Single country"),
+        method = "lm",
+        formula = y ~ bs(x, knots = knots_loc[-c(1, knots_num)], degree = 3),
+        se = FALSE
     ) +
     facet_wrap(vars(country)) +
     scale_colour_brewer(type = "qual", palette = 3) +
@@ -137,7 +139,7 @@ tillman <- left_join(tillman, tmp, by = "country") %>%
     mutate(vote_pec_wi_z = vote_pec_wi / vote_pec_wi_sigma)
 tmp <- tillman %>% mutate(country = "All")
 pdta <- rbind.data.frame(tillman, tmp)
-## Plot both trends
+## Plot all trends
 p <- ggplot(data = pdta, aes(x = year)) +
     geom_smooth(aes(y = turnout_wi_z, colour = "Turnout"), se = FALSE,
         method = "lm", formula = y ~ bs(x, 3)
@@ -150,6 +152,7 @@ p <- ggplot(data = pdta, aes(x = year)) +
         method = "lm", formula = y ~ bs(x, knots = knots_loc[-c(1, knots_num)], degree = 3),
         se = FALSE
     ) +
+    geom_rug(sides = "b") +
     facet_wrap(vars(country)) +
     scale_colour_brewer(type = "qual", palette = 3) +
     labs(y = "Z-Standardized Within-Differences", colour = "Cubic Base Spline for") +
@@ -176,6 +179,11 @@ for (i in 1:length(treatment)) {
     )
 }
 bk_se <- lapply(fitted_models, vcovBK, cluster = c("group"))
+bk_pval <- lapply(fitted_models,
+    function(x){
+        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
+    }
+)
 # Housekeeping ===================================================================
 drop <- c(
     grep("sigma", names(tillman), fixed = TRUE),

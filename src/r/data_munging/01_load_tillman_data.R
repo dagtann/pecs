@@ -12,13 +12,13 @@ tillman <- haven::read_dta(
 tillman <- select(tillman,
     country, year, enep, disprop, pr, plurality, closeness, growth, lnincome,
     year, pec1, pec20, vote_pec, smallpec, largepec, turnout
-) %>% 
-    mutate(turnout = turnout / 100, vote_pec = vote_pec / 100) %>%
+) %>%
+    # mutate(turnout = turnout / 100, vote_pec = vote_pec / 100) %>%
     mutate(year2 = year * 10 + duplicated(
         paste(tillman$country, tillman$year, sep = ":"))
     ) %>%
     filter(
-        !is.na(country) & (country != "") & 
+        !is.na(country) & (country != "") &
         !(country %in% c("Australia", "Canada", "Luxembourg"))
     )
 bw <- select(tillman, -year, -year2) %>%
