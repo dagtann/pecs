@@ -1,10 +1,30 @@
 # Admin files
-./pecs.sublime-workspace
+pecs.sublime-workspace
 
 # Folders
-./out
+/out/
 
 # Output files
-./rpt/*.pdf
+/rpt/*.pdf
 
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+
+# User-specific files
+.Ruserdata
+
+# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
+.httr-oauth
+
+# knitr and R markdown default cache directories
+/*_cache/
+/cache/
+/figure/
+
+# Temporary files created by R markdown
+*.utf8.md
 
