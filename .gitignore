@@ -1,0 +1,10 @@
+# Admin files
+./pecs.sublime-workspace
+
+# Folders
+./out
+
+# Output files
+./rpt/*.pdf
+
+
