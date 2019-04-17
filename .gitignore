@@ -3,7 +3,7 @@
 *.sublime-project
 
 # Folders
-./out/*
+/out/*
 
 # Output files
 /rpt/*.pdf
