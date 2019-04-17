@@ -31,3 +31,16 @@ Concluded replication. Results can consistently be reproduced, but turn out not 
 ## 04/09/2019
 
 Prepped inclusion of information on the electoral system. Found duplicated entries in Gandruds panel series. Must develop a system to identify unique elections in Tillman, then forward that information to VDEM and Gandrud.
+
+## 04/17/2019
+
+Lost code yesterday on push to github. Rewrote almost the entire data_munging stage. Checked through electoral system indicators. Notices severe flaws in PR & Plurality:
+1. Italy, France, Japan, New Zealand account for all within-variance;
+2. With the exception of New Zealand dropping any of these countries dramatically shifts the coefficients around;
+3. There seem to be coding mistakes, e.g., France has plurality in 2007 only.
+Dropped both indicators to clean up the analysis. Higher levels of dispropotionality and more parties continue to decrease turnout. After detrending vote_pec_wi continues to boost turnout whereas pec1_wi does not.
+
+Next steps:
+
+- Write up instituions;
+- Throw in polarization.

@@ -1,35 +1,94 @@
-library("car")
-institutions <- c("pr", "plurality", "disprop", "enep")
-apply(tillman[, paste(institutions, "wi", sep = "_")], 2, fivenum)
-apply(tillman[, paste(institutions, "wi", sep = "_")], 2, sd)
 
-scatterplotMatrix(tillman[, paste(institutions, "wi", sep = "_")], smooth = FALSE)
-cor(tillman[, paste(institutions, "wi", sep = "_")])
+rm(list = ls()[!(ls() %in% clean_workspace)])
+packs <- c("car", "splines", "plm")
+missing <- which(!(packs %in% rownames(installed.packages())))
+if(any(missing)) {
+    cat("Installing missing packages: ", packs[missing], "\n")
+    install.packages(packs[missing], dependencies = TRUE)
+}
+lapply(packs, library, character.only = TRUE)
 
-fit_pec1 <- lm(turnout_wi ~ pec1_wi + enep_wi + disprop_wi + pr_wi + 
+# institution lookup table
+institution_label <- paste(c("pr", "plurality", "disprop", "enep"), "wi", sep ="_")
+institution_location <- which(names(tillman) %in% institution_label)
+names(institution_location) <- institution_label
+
+# time trend
+yr_range <- as.numeric(min(tillman$year):max(tillman$year))
+knots_num <- 3
+knots_loc <- quantile(yr_range, probs = seq(0, 1, length.out = knots_num))
+yr_spline_labs <- paste0(paste0("yr_spline", 1:(knots_num + 1)))
+
+# Data objects
+yr_splines <- bs(yr_range, knots = knots_loc[-c(1, knots_num)], degree = 3)
+yr_splines <- cbind.data.frame(yr_splines, yr_range)
+colnames(yr_splines) <- c(yr_spline_labs, "year")
+tillman <- left_join(tillman, yr_splines, by = "year")
+
+# univariate assessment
+apply(tillman[, institution_location], 2, summary)
+apply(tillman[, institution_location], 2, sd)
+boxplot(tillman[, institution_location])
+# very little variation in plurality / pr
+# what countries contribute variation?
+pdta <- gather(tillman, key = "variable", value = "value", institution_location)
+ggplot(data = pdta, aes(x = country, y = value)) +
+    geom_boxplot() + facet_wrap(~variable) +
+    theme(axis.text.x = element_text(angle = 90))
+# sensitivity analysis using simplified model:
+drop <- c("France", "Italy", "Japan", "New Zealand")
+fit <- lm(turnout_wi ~ pec1_wi + enep_wi + disprop_wi + pr_wi + 
     plurality_wi + closeness_wi + growth_wi + lnincome_wi,
-    data = tillman
+    data = subset(tillman, !(country %in% c("Australia", "Luxemburg", "Canada")))
 )
-summary(fit_pec1)
-vif(fit_pec1)
-# Plurality and pr confidence intervals affected most
-residualPlots(fit_pec1)
-marginalModelPlots(fit_pec1)
-ggplot(data = tillman, aes(x = disprop_wi, y = turnout_wi)) +
-    geom_point() + geom_smooth()
-
-residualPlots(
-    update(fit_pec1, . ~ . - pr_wi - disprop_wi + poly(disprop_wi, 3))
+beta_hat <- matrix(FALSE, nrow = length(coef(fit)), ncol = length(drop) + 1,
+    dimnames = list(names(coef(fit)), c(drop, "original"))
 )
+for(i in seq(length(drop))) {
+    beta_hat[, i] <- coef(
+        update(
+            fit, . ~ .,
+            data = subset(
+                tillman, !(
+                    country %in% append(
+                       c("Australia", "Luxemburg", "Canada"), drop[i]
+                    )
+                )
+            )
+        )
+    )
+}
+beta_hat[, ncol(beta_hat)] <- coef(fit)
+beta_hat
+# pr & plurality extremely sensitive to France, Italy, Japan + strongly correlated
+as.data.frame(tillman[tillman$country %in% drop, c("country", "year2", "pr", "plurality")])
+# France: plurality == 1 only in 2007!? All but 1986 (0, 0)
+# Italy: Switches from PR to all Plurality in 1994
+# Japan: (0, 0) until 1993, all plurality afterwards
+# These codings are fishy.
 
+scatterplotMatrix(tillman[, institution_location], smooth = FALSE)
+cor(tillman[, institution_location])
+# plurality & pr strong negative correlation
+# disprop_wi & pr_wi strong negative correlation
+fit_1 <- update(fit, . ~ . - pr_wi - plurality_wi,
+    data = subset(tillman, !(country %in% c("Australia", "Luxemburg", "Canada")))
+)
+summary(fit_1)
+vif(fit_1) # multicollinearity not an issue anymore
+residualPlots(fit_1)
+avPlots(fit_1, )
+marginalModelPlots(fit_1)
 
-    (tillman$disprop_wi, tillman$turnout_wi)
-aggregate(disprop_wi ~ )
+fit_2 <- update(fit_1, . ~ . + enep_wi * disprop_wi * closeness_wi)
+summary(fit_2)
+anova(fit_1, fit_2)
 
-ggplot(data = tillman, aes(x = disprop_wi))
-apply(till)
-cor(as.matrix(tillman[]))
+fit_3 <- update(fit_1, . ~ . + yr_spline1 + yr_spline2 + yr_spline3 + yr_spline4)
+summary(fit_3)
 
+fit_4 <- update(fit_3, . ~ . - pec1_wi + vote_pec_wi)
+summary(fit_4)
 
 # Declare string constants
 panel_id <- c("country", "year2")
