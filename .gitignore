@@ -1,8 +1,8 @@
 # Admin files
-pecs.sublime-workspace
+*.sublime-workspace
 
 # Folders
-/out/
+./out/
 
 # Output files
 /rpt/*.pdf
