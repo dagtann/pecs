@@ -108,7 +108,9 @@ p <- ggplot(data = pdta, aes(x = year, y = pec1_wi)) +
     ) +
     geom_smooth(
         data = subset(pdta, country != "All"),
-        method = "lm", formula = y ~ bs(x, knots = knots_loc[-c(1, knots_num)], degree = 3), se = FALSE,
+        method = "lm",
+        formula = y ~ bs(x, knots = knots_loc[-c(1, knots_num)], degree = 3),
+        se = FALSE,
         aes(colour = "Single country")
     ) +
     facet_wrap(vars(country)) +
@@ -191,4 +193,8 @@ drop <- c(
     grep("spline", names(tillman), fixed = TRUE)
 )
 tillman <- tillman[, -drop]
+# lapply(packs,
+#     function(p){detach(name = paste0("package:", p), character.only = TRUE)}
+# )
 # rm(list = ls()[!(ls() %in% clean_workspace)])
+## END
