@@ -48,3 +48,14 @@ Next steps:
 ## 04/25/2019
 
 Finished institutions write up. Tried to merge polarization from lsvergl into the data. Could not identify unique country id. Return to issue!
+
+## 04/26/2019
+
+Epiphany: Tillman drops countries which do not contribute information on the causal effect of PECs, e.g., Canada, Luxembourg, and Australia. However, these countries may provide information on the strategic incentives to form PECs. We are possibly dealing with endogenous selection bias.
+
+Unintuitive results on adding polarization:
+
+1. Polarization does not increase turnout. The marginal effect is negative and statistically indistinguishable from 0.
+2. PEC voting percentages continue to boost turnout even after controlling for party system polarization.
+
+Results merit closer inspection of the estimated models.

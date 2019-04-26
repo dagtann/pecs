@@ -1,12 +1,12 @@
 ---
-date: 04-12-2019
+title: 2nd Report on Tillman Replication
+date: 04/26/2019
 output:
   pdf_document:
     includes:
       in_header: header.tex
 ---
 
-\maketitle
 \tableofcontents
 \newpage
 
@@ -136,7 +136,7 @@ texreg(fitted_models,
         trends. There is something to be salvaged.
 \end{enumerate}
 
-\section{Refinement of Institutional Covariates}
+\section{Refinement of institutional covariates}
 
 To control for established, alternative influences on turnout (p. 731) Tillman's
 analysis includes information on disproportionality, the effective number of
@@ -167,8 +167,8 @@ observations (`r sprintf("%.3f", apply(tillman[, c("pr_wi", "plurality_wi")],
 2, function(x){mean(x == 0)}))`). Only France, Italy, Japan, and New Zealand
 contribute variance, rendering their estimated effects on turnout particularly
 volatile. Also, these indicators correlate quite strongly as do PR and
-disproportionality (see the correlation matrix in Table 
-\ref{tbl:CorrelationInstitutions}). Finally, the codings strike me as 
+disproportionality (see the correlation matrix in Table
+\ref{tbl:CorrelationInstitutions}). Finally, the codings strike me as
 untrustworthy. For example, Japan has always had a plurality
 component, but the data recognize that only from 1996 onward.
 That same year, the Japanese electoral system went from SMDP to mixed member
@@ -268,3 +268,161 @@ rm(list = ls()[!(ls() %in% clean_workspace)])
 
 
 \section{Bringing polarization back in}
+
+So far, the formation of PECs does not boost turnout, but their strong showing
+reliably does. Notwithstanding, this result strikes me as spurious at because
+voting percentages are downstream from turnout. Citizens first go to vote and
+only then comes the counting. Hence, voting percentages cannot be known before
+turnout is fixed.  Hence, there is every reason to doubt the association
+between turnout and PEC strength. Polarization of the party system constitutes
+one potential confounder, and Table \ref{tbl:UnivariateSummaryPolarization}
+shows the distribution of Dalton's Index in Tillman's data.
+
+```{r, uniSumPolarization, results = "asis"}
+mytbl <- apply(tillman[, c("polarization", "polarization_wi")], 2, summary)
+tmp <- aggregate(polarization_bw ~ country, data = tillman, FUN = mean)
+mytbl <- cbind(mytbl, summary(tmp[, 2]))
+colnames(mytbl) <- c("Polarization", "Within", "Between")
+stargazer::stargazer(mytbl, header = FALSE,
+    title = "Univariate Summary of Polarization",
+    label = "tbl:UnivariateSummaryPolarization"
+)
+```
+
+The next figure explores the bivariate correlation of within-changes in turnout
+and polarization at various levels of PEC strength. First, in striking contrast
+to the established literature the graph does not imply any clear pattern of the
+association between turnout and polarization. Increasing polarization seems to
+depress turnout in Austria whereas it gets out the vote in France. At the same
+time, several countries imply strong linearities as can be seen from the
+wiggly\footnote{I'm told ``wiggly'' is a proper scientific term.} loess
+smoothers in the United Kingdom, Israel and Portugal. Moreover, it is not clear
+from the graph that increased polarization is associated with higher voting
+percentages for pre-electoral coalition. If that was the case, all countries in
+the data should behave like Denmark and Italy where there are stark
+bifurcations between elections with and without strong PECs. More typically,
+PECs populate the entire range of voting percentages at each level of
+polarization. In short, polarization does not seem to confound Tillman's analysis.
+
+\begin{figure}
+\caption{Bivariate Association of Turnout and Polarization}
+\label{fig:ScatterTurnoutPolarization}
+
+```{r}
+tmp <- tillman %>% mutate(country = "All")
+pdta <- rbind.data.frame(tillman, tmp)
+ggplot(data = pdta, aes(x = polarization_wi, turnout_wi)) +
+    geom_point(aes(size = vote_pec)) + geom_smooth(se = FALSE, span = .9) +
+    facet_wrap(vars(country)) +
+    labs(x = "Demeaned Party System Polarization", y = "Demeaned Turnout",
+        size = "PEC voting percentage"
+    ) +
+    theme(legend.position = "bottom", legend.direction = "horizontal")
+rm(tmp, pdta)
+```
+
+\end{figure}
+
+```{r, include = FALSE}
+packs <- c("plm", "splines", "texreg")
+missing <- which(!(packs %in% rownames(installed.packages())))
+if (any(missing)) {
+    cat("Installing missing packages: ", packs[missing], "\n")
+    install.packages(packs[missing], dependencies = TRUE)
+}
+lapply(packs, library, character.only = TRUE, quietly = TRUE)
+
+# Constants
+panel_id <- c("country", "year2")
+control <- paste(
+    c("polarization", "enep", "disprop", "closeness", "growth", "lnincome"),
+    collapse = " + "
+)
+treatment <- c("pec1", "pec20", "vote_pec", "smallpec+largepec")
+response <- "turnout"
+yr_range <- as.numeric(min(tillman$year):max(tillman$year))
+knots_num <- 3
+knots_loc <- quantile(yr_range, probs = seq(0, 1, length.out = knots_num))
+yr_spline_labs <- paste0(paste0("yr_spline", 1:(knots_num + 1)))
+
+# Data objects
+yr_splines <- bs(yr_range, knots = knots_loc[-c(1, knots_num)], degree = 3)
+yr_splines <- cbind.data.frame(yr_splines, yr_range)
+colnames(yr_splines) <- c(yr_spline_labs, "year")
+data_to_fit <- left_join(tillman, yr_splines, by = "year")
+# Throws a warning about different attributes, STATA import legacy
+data_to_fit <- pdata.frame(data_to_fit, index = c("country", "year2"))
+fitted_models <- list()
+
+# refit models
+assign( # baseline
+        "frm",
+        paste0(response, " ~ ", paste(
+            control, paste(yr_spline_labs, collapse = " + "), sep = " + "
+        )
+    )
+)
+fitted_models[[1]] <- plm(
+    as.formula(frm), model = "within", data = data_to_fit
+)
+for (i in 1:length(treatment)) {
+    assign(
+        "frm",
+        paste0(response, " ~ ", paste(treatment[i], control,
+            paste(yr_spline_labs, collapse = " + "), sep = " + ")
+        )
+    )
+    fitted_models[[i+1]] <- plm(
+        as.formula(frm), model = "within", data = data_to_fit
+    )
+}
+bk_se <- lapply(fitted_models, vcovBK, cluster = c("group"))
+bk_pval <- lapply(fitted_models,
+    function(x){
+        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
+    }
+)
+```
+
+The results in Table \ref{tbl:ResultsPolarization} confirm those expectations.
+Even though the estimated effect on polarization is consistently positive, it
+never achieves statistical significance. This result might depend on the assumed
+functional form or the measurement and wards closer scrutiny. More importantly,
+strong pre-electoral coalitions continue to support turnout even after
+controlling for polarization. In other words, polarization does not seem to
+confound that robust, but nonetheless dubious association. However, note that
+the estimated effect of polarization is effectively halved when the strength
+rather than existence of PECs comes into play. Apparently, PECs strength
+mediates some of the effect of polarization on turnout which strikes me as
+intuitive.
+
+```{r, results = "asis"}
+texreg(fitted_models,
+    digits = 2,
+    override.se = lapply(bk_se, function(x){sqrt(diag(x))}),
+    override.p = bk_pval,
+    custom.coef.names = c("Polarization", "Parties", "Disproportionality",
+        "Closeness", "Economic Growth", "log(Income)", "Spline 1",
+        "Spline 2", "Spline 3", "Spline 4", "PEC",
+        "PEC $>$ 20\\%", "Vote PEC", "Small PEC", "Large PEC"
+    ),
+    reorder.coef = c(11:15, 1:10),
+    caption = "Results with Refined Institutions", caption.above = TRUE,
+    label = "tbl:ResultsPolarization",
+    stars = c(0.001,  0.01, 0.05, 0.1)
+)
+rm(list = ls()[!(ls() %in% clean_workspace)])
+```
+
+\section{Next steps}
+
+Here is a shopping list of things I consider worthwhile.
+
+\begin{enumerate}
+    \item Measurement: Acquire and evaluate measurements of Polarization.
+    \item Refinement: Given somewhat unexpected results on polarization closer
+        model inspection is justified.
+    \item Theory building: What types of PECs do contribute to government
+        identifiability?
+\end{enumerate}
+
