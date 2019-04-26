@@ -6,6 +6,7 @@ output:
       in_header: header.tex
 ---
 
+\maketitle
 \tableofcontents
 \newpage
 
@@ -142,7 +143,8 @@ analysis includes information on disproportionality, the effective number of
 electoral parties (ENEP), the closeness of elections, and existence of proportional
 respectively plurality tiers. Moreover, for reasons not entirely clear the
 author includes two interaction terms: PR $\times$ disproportionality and
-Plurality $\times$ closeness. The table shows univariate summaries.
+Plurality $\times$ closeness. Table \ref{tbl:UnivariateSummaryInstitutions} shows
+univariate summaries.
 
 
 ```{r, results = "asis"}
@@ -154,7 +156,8 @@ names(institution_location) <- institution_label
 mytbl <- apply(tillman[, institution_location], 2, summary)
 colnames(mytbl) <- c("ENEP", "Disproprtionality", "PR", "Plurality", "Closeness")
 stargazer::stargazer(mytbl, header = FALSE,
-    title = "Summary of Demeaned Institutional Controls"
+    title = "Summary of Demeaned Institutional Controls",
+    label = "tbl:UnivariateSummaryInstitutions"
 )
 ```
 
@@ -164,8 +167,9 @@ observations (`r sprintf("%.3f", apply(tillman[, c("pr_wi", "plurality_wi")],
 2, function(x){mean(x == 0)}))`). Only France, Italy, Japan, and New Zealand
 contribute variance, rendering their estimated effects on turnout particularly
 volatile. Also, these indicators correlate quite strongly as do PR and
-disproportionality (see the correlation matrix below). Finally, the codings
-strike me as untrustworthy. For example, Japan has always had a plurality
+disproportionality (see the correlation matrix in Table 
+\ref{tbl:CorrelationInstitutions}). Finally, the codings strike me as 
+untrustworthy. For example, Japan has always had a plurality
 component, but the data recognize that only from 1996 onward.
 That same year, the Japanese electoral system went from SMDP to mixed member
 parallel, but the newly introduced PR tier never shows up in the data. Germany,
@@ -178,9 +182,21 @@ colnames(mytbl) <- rownames(mytbl) <- c(
     "ENEP", "Disproprtionality", "PR", "Plurality", "Closeness"
 )
 stargazer::stargazer(mytbl, header = FALSE,
-    title = "Correlation of Demeaned Institutional Controls"
+    title = "Correlation of Demeaned Institutional Controls",
+    label = "tbl:CorrelationInstitutions"
 )
 ```
+
+The impact which pre-electoral coaltions have on turnout does depend noticeably
+on the refined set of institutional controls. Effect estimates stay close to the
+results reported above as can be seen from  Table \ref{tbl:ResultsRefinedInstitutions}.
+Accordingly, the mere existance of PECs does not seem to matter, but PECs that
+acquire a significant share of votes boost turnout by 1.38 percentage points. In
+fact, each additional percentage point that PECs account for increases turnout by
+0.02 percentage points. However, these seemingly robust results go along with
+lower p-values than before. In line with extant research, the effective number of
+parties has an ambivalent effect on turnout, disproportionality decreases it, and
+so do non-competitive elections.
 
 ```{r, include = FALSE}
 packs <- c("plm", "splines", "texreg")
@@ -244,7 +260,7 @@ texreg(fitted_models,
     ),
     reorder.coef = c(1, 11, 12, 13, 14, 2:10),
     caption = "Results with Refined Institutions", caption.above = TRUE,
-    label = "tbl:test",
+    label = "tbl:ResultsRefinedInstitutions",
     stars = c(0.001,  0.01, 0.05, 0.1)
 )
 rm(list = ls()[!(ls() %in% clean_workspace)])

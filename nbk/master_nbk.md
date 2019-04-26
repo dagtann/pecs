@@ -42,5 +42,9 @@ Dropped both indicators to clean up the analysis. Higher levels of dispropotiona
 
 Next steps:
 
-- Write up instituions;
+- Write up instituions; √
 - Throw in polarization.
+
+## 04/25/2019
+
+Finished institutions write up. Tried to merge polarization from lsvergl into the data. Could not identify unique country id. Return to issue!
