@@ -5,8 +5,9 @@ options(help_type = "html")
 
 packs <- c("tidyverse")
 for ( i in packs ) {
-    if (!(i %in% rownames( installed.packages())))
-        installed.packages(i, dependencies = TRUE)
+    if (!(i %in% rownames(installed.packages()))) {
+        install.packages(i, dependencies = TRUE)
+    }
     library(i, character.only = TRUE)
 }
 rm(packs, i)

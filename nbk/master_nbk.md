@@ -59,3 +59,12 @@ Unintuitive results on adding polarization:
 2. PEC voting percentages continue to boost turnout even after controlling for party system polarization.
 
 Results merit closer inspection of the estimated models.
+
+## 05/01/2019
+
+Added new lsvergl data. Data now includes information on PEC type,
+joint program and incumbency status. Also, voting percentages for
+incumbent PECs vs. others has been added. First results hint to
+mobilizing effect of non-incumbent PECs, i.e. coordinated opposition
+establishes a clearly identifiable alternative to the government. This
+hint merits further investigation.
