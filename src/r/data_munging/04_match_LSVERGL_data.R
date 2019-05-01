@@ -21,17 +21,16 @@ lapply(packs, library, character.only = TRUE)
 # Declare Constants
 panel_id <- c("iso3c", "year2")
 new_content <- c("twobiggest_parties", "blocvotes",
-    "additional_identifiability", "pec_neu", "pectotal_neu", "pec10_neu",
-    "pec20_neu", "pec30_neu", "enp_votes", "enp_seats",
-    "advantage_ratio", "polarization", "enpv", "enps", "dm_eff"
+    "additional_identifiability", "pec_neu", "pectotal_neu", "pectotal_inc",
+    "pectotal_other", "pec10_neu", "pec20_neu", "pec30_neu",
+    "enp_votes", "enp_seats", "advantage_ratio", "polarization", "dm_eff",
+    paste("any", c(paste0("type", 1:6), "progr", "incumbent"), sep = "_")
 )
-
 
 # Define Data Objects
 lsvergl <- read.dta(
     file.path(path_project, "dta", "raw", "Tillman_LSVERGL.dta")
 )
-
 # Check Data Integrity
 # Sanity check: Are panel entries uniquely identified?
 duplicates <- with(lsvergl, duplicated(paste(c, year2, sep = ":")))
