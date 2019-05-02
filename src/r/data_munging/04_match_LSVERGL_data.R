@@ -4,6 +4,8 @@
 # Author: Dag Tanneberg
 # Last update: 2019/04/25
 # Version info:
+#   2019/05/01 Switched back to foreign::read.dta b/c STATA labeled values
+#       caused problems. Added new PEC information to object new_content.
 #   2019/04/25 Switched from haven::read_dta to foreign::read.dta. Primary key
 #       now imports as string and can be matched with country_panel. Finished
 #       import and merge. Implemented consistentcy checks.
