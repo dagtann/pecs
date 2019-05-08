@@ -68,3 +68,7 @@ incumbent PECs vs. others has been added. First results hint to
 mobilizing effect of non-incumbent PECs, i.e. coordinated opposition
 establishes a clearly identifiable alternative to the government. This
 hint merits further investigation.
+
+## 05/07/2019
+
+Investigate overlap between PEC codings. Codings disagree on 22 per cent of all observations. Disagreements vary stronger by country than they do by elections. 
