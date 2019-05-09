@@ -43,7 +43,6 @@ lsvergl <- lsvergl %>% mutate(iso3c = as.character(c))
 # Sanity check: Type conversion successful? Any NA entries?
 summary(lsvergl$iso3c); table(lsvergl$iso3c, exclude = NULL)
 lsvergl <- select(lsvergl, c(panel_id, new_content))
-
 # Sanity check: plausible ranges on content?
 summary(lsvergl[, new_content])
 

@@ -1,3 +1,20 @@
+pec_features <- paste(
+    "any", c(paste0("type", 1:6), "progr", "incumbent"), sep = "_"
+)
+apply(tillman[pec_features], 2, summary) # single NA on all obs
+# All indicator variables, all sensible ranges.
+# type3 or type6 never observed
+
+
+tmp <- select(tillman, pec_features[c(-3, -6)]) %>%
+    gather(key = "type", value = "value", any_type1, any_type2, any_type4, any_type5, any_progr, any_incumbent)
+ggplot(tmp, aes(x = type, y = value)) + stat_sum()
+
+head(tmp)
+ggplot(data = tillman)
+tillman
+
+
 library(plm)
 
 # Constants

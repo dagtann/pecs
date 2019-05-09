@@ -1,7 +1,8 @@
 # Load Tillman's publication data and assign unique panel key
 # Author: Dag Tanneberg
-# Last update: 04/17/2019
+# Last update: 05/02/2019
 # Version info:
+#   05/02/2019; Found & corrected coding error: Spain 2008 listed as 2008
 #   04/17/2019: Formatting, removed a filter statement that dropped
 #        Australia, Canada, and Luxembourg from the data.
 # =============================================================================
@@ -19,6 +20,11 @@ lapply(packs, library, character.only = TRUE)
 tillman <- read_dta(
     file.path(path_project, "dta", "raw", "pec_elections_apr13.dta")
 )
+
+# Error correction
+tillman <- tillman %>%
+    mutate(year = ifelse(country == "Spain" & year == 2006, 2008, year))
+
 tillman <- select(tillman,
     country, year, enep, disprop, pr, plurality, closeness, growth, lnincome,
     year, pec1, pec20, vote_pec, smallpec, largepec, turnout

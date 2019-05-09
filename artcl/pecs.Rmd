@@ -1,0 +1,56 @@
+---
+output:
+    pdf_document:
+        includes:
+            in_header: header.tex
+    documentclass: cup_PSRM
+---
+
+\markboth{GANGHOF, EPPNER, AND TANNEBERG}{Turnout and Pre-Electoral Coalitions}
+
+<!-- \journalname{Draft Submission to Political Science Research and Methods}
+\journalcopy{The European Political Science Association, 2019}
+\fpage{X}
+\lpage{XXX}
+\journalvolume{6}
+\journalissue{3}
+\doinumber{doi:10.1017/psrm.2016.XX}
+ -->
+
+\author{Steffen Ganghof, Sebastian Eppner, Dag Tanneberg}
+\title{Bring out the Rest\newline What pre-electoral coalitions increase turnout in national elections?}
+\maketitle
+
+# Introduction
+
+What explains turnout in general elections with high numbers of competing parties?
+After all, as the number of political parties increases coalition cabinets become 
+more likely whose format usually depends exclusively on the bargains struck in 
+parliament. ``The presence of many parties may mean that voters have little say in
+the actual selection of the government'' \cite[118]{Blais.2006}, effectively
+reducing the incentive to turn out and vote. Extant research suggests that
+pre-electoral coalitions mitigate the adverse effect of multipartism as they
+provide everyone with additional information on credible coalition options
+\cite[197]{Smith.2018}. However, prior empirical tests of that argument
+suffer from two non-negligble constraints. First, results are based on a small set
+of countries and a limited number of elections. As a consequence, their
+generalizability is questionable. Second, and more importantly, prior research
+frequently aggregates data to the election level, disregarding information on
+different types, electoral strength or prior incumbency of pre-electoral
+coalitions. This study presents new data on pre-electoral coalitions that have
+higher temporal and spatial coverage and that allow closer scrutiny of each
+covered pre-electoral coalition. The data show substantial differences between
+pre-electoral coalitions and imply that only coalitions which formulate a clear
+alternative to the incumbent government increase turnout in multiparty elections.
+
+# Why does multipartism decrease turnout?
+
+# What pre-electoral coalitions increase government identifiability?
+
+# Introducing the data
+
+# Results
+
+# Discussion
+
+# Conclusion
