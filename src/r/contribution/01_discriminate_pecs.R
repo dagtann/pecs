@@ -1,19 +1,59 @@
-pec_features <- paste(
-    "any", c(paste0("type", 1:6), "progr", "incumbent"), sep = "_"
-)
-apply(tillman[pec_features], 2, summary) # single NA on all obs
-# All indicator variables, all sensible ranges.
-# type3 or type6 never observed
+rm(list = ls()[!(ls() %in% clean_workspace)])
+packs <- c("entropy")
+missing <- which(!(packs %in% rownames(installed.packages())))
+if(any(missing)) {
+    cat("Installing missing packages: ", packs[missing], "\n")
+    install.packages(packs[missing], dependencies = TRUE)
+}
+lapply(packs, library, character.only = TRUE)
+
+# Does lsvergl identify the same PECs?
+mytable <- with(tillman, table(tillman = pec1, lsvergl = pec_neu, exclude = NULL)
+addmargins(mytable)
+       # lsvergl
+# tillman   0   1 <NA> Sum
+    # 0   115  30    1 146
+    # 1    29  89    0 118
+    # Sum 144 119    1 264
+1 - sum(diag(mytable)) / sum(mytable) # Discrepancy
+# Sources disagree on 22 percent of all observations
+
+# On what cases do both sources differ?
+tmp <- filter(tillman, pec1 != pec_neu) %>%
+    select(iso3c, year2, pec1, pec_neu)
+length(unique(tmp$iso3c)) / length(unique(tillman$iso3c)) # 68% ctrys affected
+length(unique(paste(tmp$iso3c, tmp$year2))) / # N_elections affected
+    length(unique(paste(tillman$iso3c, tillman$year2))) # N all elections
+# 22% elections affected
+
+tmp <- group_by(tmp, iso3c) %>%
+    summarise_if(is.numeric, sum) %>%
+    gather("source", "value", pec1, pec_neu)
+ggplot(data = tmp, aes(x = reorder(iso3c, value), y = value, fill = source)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    scale_y_continuous(breaks = seq(0, 20, 2)) +
+    labs(y = "Number of elections in which pre-electoral coalitions formed")
 
 
-tmp <- select(tillman, pec_features[c(-3, -6)]) %>%
-    gather(key = "type", value = "value", any_type1, any_type2, any_type4, any_type5, any_progr, any_incumbent)
-ggplot(tmp, aes(x = type, y = value)) + stat_sum()
 
-head(tmp)
-ggplot(data = tillman)
-tillman
+as.data.frame(tmp)
 
+
+tmp <- group_by(tillman, iso3c) %>%
+    select(paste("any", paste0("type", 1:6), sep = "_")) %>%
+    summarise_if(is.numeric, sum, na.rm = TRUE)
+by_ctry_entropy <- apply(tmp[, -1], 1, entropy, na.rm = TRUE)
+names(by_ctry_entropy) <- tmp[["iso3c"]]
+
+grep("any", names(tillman))
+tmp <- gather(tillman, "any", "value", grep("any", names(tillman)))
+tmp <- aggregate(value ~ any, data = tmp, FUN = sum, na.rm = TRUE)
+sum(tmp$value)
+with(tillman, length(unique(paste(iso3c, year2))))
+sum(apply(tillman[, grep("any", names(tillman))], 1, FUN = sum, na.rm = TRUE))
+tmp
+table(tillman$pec1)
+ggplot(data = tmp, aes(x = any, y = value)) + geom_bar(stat = "identity")
 
 library(plm)
 
