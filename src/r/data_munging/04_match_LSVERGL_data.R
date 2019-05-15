@@ -4,6 +4,9 @@
 # Author: Dag Tanneberg
 # Last update: 2019/04/25
 # Version info:
+#   2019/05/14 Commented any_fooBar indicator variables b/c not included in
+#       latest lsvergl data set version. Added election date variable to
+#       new_content
 #   2019/05/01 Switched back to foreign::read.dta b/c STATA labeled values
 #       caused problems. Added new PEC information to object new_content.
 #   2019/04/25 Switched from haven::read_dta to foreign::read.dta. Primary key
@@ -22,11 +25,11 @@ lapply(packs, library, character.only = TRUE)
 
 # Declare Constants
 panel_id <- c("iso3c", "year2")
-new_content <- c("twobiggest_parties", "blocvotes",
+new_content <- c("election_date", "election_id", "twobiggest_parties", "blocvotes",
     "additional_identifiability", "pec_neu", "pectotal_neu", "pectotal_inc",
     "pectotal_other", "pec10_neu", "pec20_neu", "pec30_neu",
-    "enp_votes", "enp_seats", "advantage_ratio", "polarization", "dm_eff",
-    paste("any", c(paste0("type", 1:6), "progr", "incumbent"), sep = "_")
+    "enp_votes", "enp_seats", "advantage_ratio", "polarization", "dm_eff"# ,
+    # paste("any", c(paste0("type", 1:6), "progr", "incumbent"), sep = "_")
 )
 
 # Define Data Objects
