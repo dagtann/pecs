@@ -3,23 +3,26 @@ packs <- c("entropy")
 missing <- which(!(packs %in% rownames(installed.packages())))
 if(any(missing)) {
     cat("Installing missing packages: ", packs[missing], "\n")
-    install.packages(packs[missing], dependencies = TRUE)
+    install.packages(packs[missing], dependencies = TRUE,
+        repos = "https://cloud.r-project.org"
+    )
 }
 lapply(packs, library, character.only = TRUE)
 
 
-# Basic descriptives on lsvergl pec data
+# Basic descriptives on lsvergl pec data =========================================
 filter <- is.na(country_panel$pec_neu) # obs in lsvergl?
 any(filter) # sanity check: at least some NA -> pec count not brute forced to 0
 length(unique(country_panel$iso3c[!filter])) # 37 democracies
 range(country_panel$year2[!filter]) # 1945 to 2015
 tmp <- aggregate(
-    election_id ~ iso3c, subset(country_panel, !is.na(pec_neu)), function(x) {max(seq_along(x))}
+    election_id ~ iso3c, subset(country_panel, !is.na(pec_neu)),
+    function(x) max(seq_along(x))
 )
 any(is.na(tmp)) # sanity check: any election unidentified?
 length(unique(tmp$iso3c)) # sanity check: still 37 democracies?
 sum(tmp$election_id) # 564 elections
-summary(tmp) # 5 to 27 elections per countriey
+summary(tmp) # 5 to 27 elections per country
 tmp[tmp$election_id >= median(tmp$election_id), ] # old democracies
 tmp[tmp$election_id < median(tmp$election_id), ] # 3rd wave democracies + LUX (5yr legislature)
 hist(tmp$election_id, breaks = 15) # apparent gap b/w 10 and 15 elections
@@ -29,6 +32,12 @@ hist(tmp$election_id, breaks = 15) # apparent gap b/w 10 and 15 elections
 pec_all <- read_dta( # load complete chair data
     file.path(path_project, "dta", "raw", "PEC_all.dta"), encoding = "latin2"
 )
+unique_countries <- sort(unique(pec_all$country_name_short))
+setdiff(unique(country_panel$iso3c[!filter]), unique_countries)
+sort(intersect(country_panel$iso3c[!filter], unique_countries)) == unique_countries
+# ERROR: country_panel lists five more country than there are in pec_all
+
+
 # Data nests parties in elections in countries. PECs coded by party & election.
 # Therefore, the same PEC entry occurs once for each party.
 pec_strings <- names(pec_all)[grep("_string", names(pec_all), fixed = TRUE)]

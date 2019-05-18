@@ -4,6 +4,9 @@
 # Author: Dag Tanneberg
 # Last update: 2019/04/25
 # Version info:
+#   2019/05/18 Removed TUR/CYP from source. Deleted redundant code.
+#   2019/05/15 Found country entries TUR and CYP during EDA, which are not included
+#       in the original raw data. Panel entries are dropped for the time being.
 #   2019/05/14 Commented any_fooBar indicator variables b/c not included in
 #       latest lsvergl data set version. Added election date variable to
 #       new_content
@@ -26,7 +29,8 @@ lapply(packs, library, character.only = TRUE)
 # Declare Constants
 panel_id <- c("iso3c", "year2")
 new_content <- c("election_date", "election_id", "twobiggest_parties", "blocvotes",
-    "additional_identifiability", "pec_neu", "pectotal_neu", "pectotal_inc",
+    "additional_identifiability", "nupec_neu", "pec_neu", "pectotal_neu",
+    "pectotal_inc",
     "pectotal_other", "pec10_neu", "pec20_neu", "pec30_neu",
     "enp_votes", "enp_seats", "advantage_ratio", "polarization", "dm_eff"# ,
     # paste("any", c(paste0("type", 1:6), "progr", "incumbent"), sep = "_")
@@ -34,9 +38,8 @@ new_content <- c("election_date", "election_id", "twobiggest_parties", "blocvote
 
 # Define Data Objects
 lsvergl <- read.dta(
-    file.path(path_project, "dta", "raw", "Tillman_LSVERGL.dta")
+    file.path(path_project, "dta", "raw", "PEC_LSVERGL_1.dta")
 )
-# Check Data Integrity
 # Sanity check: Are panel entries uniquely identified?
 duplicates <- with(lsvergl, duplicated(paste(c, year2, sep = ":")))
 table(duplicates); rm(duplicates)
@@ -49,12 +52,9 @@ lsvergl <- select(lsvergl, c(panel_id, new_content))
 # Sanity check: plausible ranges on content?
 summary(lsvergl[, new_content])
 
-
 # Merge Datasets
-country_panel <- left_join(country_panel, lsvergl, by = c("iso3c", "year2"))
+country_panel <- full_join(country_panel, lsvergl, by = c("iso3c", "year2"))
 tillman <- left_join(tillman, lsvergl, by = c("iso3c", "year2"))  # Trainingset
-
-
 # Execute fixed effects transformation for Tillman
 polarization_bw <- tillman %>%
     select(iso3c, polarization) %>%

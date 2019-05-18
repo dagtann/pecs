@@ -2,6 +2,8 @@
 # Author: Dag Tanneberg
 # Last update: 05/02/2019
 # Version info:
+#   05/18/2019  Updated year2 generation. Now correctly identifies double election
+#       entries in IRL, GBR, GRC.
 #   05/02/2019; Found & corrected coding error: Spain 2008 listed as 2008
 #   04/17/2019: Formatting, removed a filter statement that dropped
 #        Australia, Canada, and Luxembourg from the data.
@@ -19,28 +21,27 @@ lapply(packs, library, character.only = TRUE)
 # Load Tillman's panel
 tillman <- read_dta(
     file.path(path_project, "dta", "raw", "pec_elections_apr13.dta")
-)
-
-# Error correction
-tillman <- tillman %>%
-    mutate(year = ifelse(country == "Spain" & year == 2006, 2008, year))
-
+)    
 tillman <- select(tillman,
     country, year, enep, disprop, pr, plurality, closeness, growth, lnincome,
     year, pec1, pec20, vote_pec, smallpec, largepec, turnout
 ) %>%
-    mutate(year2 = year * 10 + duplicated(
-        # Panel country X year !unique. Early elections in Greece & UK.
-        paste(tillman$country, tillman$year, sep = ":"))
-    ) %>%
     filter(
         !is.na(country) & (country != "")
     ) %>%
     mutate(iso3c = countrycode(country, "country.name", "iso3c", warn = TRUE)) %>%
+    mutate(year = ifelse(iso3c == "ESP" & year == 2006, 2008, year)) %>%
+    mutate(year2 = year * 10) %>%
+    mutate(year2 = ifelse( 
+        (iso3c == "IRL" & disprop > 2 & year == 1982) |
+        (iso3c == "GBR" & disprop > 15 & year == 1974) |
+        (iso3c == "GRC" & disprop > 4 & year == 1989),
+        year2 + 1, year2)
+    ) %>%
     mutate(in_tillman = TRUE)
 
 
-# Execute fixed effects transformation
+# Apply fixed effects transformation
 bw <- select(tillman, -country, -year, -year2, -in_tillman) %>%
     group_by(iso3c) %>%
     summarize_all(list(bw = mean)) %>%
