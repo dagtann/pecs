@@ -15,13 +15,13 @@ if (any(missing)) {
     cat("Installing missing packages: ", packs[missing], "\n")
     install.packages(packs[missing], dependencies = TRUE)
 }
-lapply(packs, library, character.only = TRUE)
+for (p in packs) library(p, character.only = TRUE, quietly = TRUE)
 
 
 # Load Tillman's panel
 tillman <- read_dta(
     file.path(path_project, "dta", "raw", "pec_elections_apr13.dta")
-)    
+)
 tillman <- select(tillman,
     country, year, enep, disprop, pr, plurality, closeness, growth, lnincome,
     year, pec1, pec20, vote_pec, smallpec, largepec, turnout
@@ -32,7 +32,7 @@ tillman <- select(tillman,
     mutate(iso3c = countrycode(country, "country.name", "iso3c", warn = TRUE)) %>%
     mutate(year = ifelse(iso3c == "ESP" & year == 2006, 2008, year)) %>%
     mutate(year2 = year * 10) %>%
-    mutate(year2 = ifelse( 
+    mutate(year2 = ifelse(
         (iso3c == "IRL" & disprop > 2 & year == 1982) |
         (iso3c == "GBR" & disprop > 15 & year == 1974) |
         (iso3c == "GRC" & disprop > 4 & year == 1989),

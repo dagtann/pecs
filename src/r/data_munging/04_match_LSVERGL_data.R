@@ -24,7 +24,7 @@ if (any(missing)) {
     cat("Installing missing packages: ", packs[missing], "\n")
     install.packages(packs[missing], dependencies = TRUE)
 }
-lapply(packs, library, character.only = TRUE)
+for (p in packs) library(p, character.only = TRUE, quietly = TRUE)
 
 # Declare Constants
 panel_id <- c("iso3c", "year2")
@@ -32,14 +32,16 @@ new_content <- c("election_date", "election_id", "twobiggest_parties", "blocvote
     "additional_identifiability", "nupec_neu", "pec_neu", "pectotal_neu",
     "pectotal_inc",
     "pectotal_other", "pec10_neu", "pec20_neu", "pec30_neu",
-    "enp_votes", "enp_seats", "advantage_ratio", "polarization", "dm_eff"# ,
+    "enp_votes", "enp_seats", "advantage_ratio", "polarization", "dm_eff",
+    "in_lsvergl"
     # paste("any", c(paste0("type", 1:6), "progr", "incumbent"), sep = "_")
 )
 
 # Define Data Objects
 lsvergl <- read.dta(
     file.path(path_project, "dta", "raw", "PEC_LSVERGL_1.dta")
-)
+) %>%
+    mutate(in_lsvergl = 1) # flag for country_panel
 # Sanity check: Are panel entries uniquely identified?
 duplicates <- with(lsvergl, duplicated(paste(c, year2, sep = ":")))
 table(duplicates); rm(duplicates)
@@ -66,5 +68,5 @@ tillman <- left_join(tillman, polarization_bw, by = "iso3c")
 tillman <- mutate(tillman, polarization_wi = polarization - polarization_bw)
 
 # Housekeeping
-lapply(paste("package", packs, sep = ":"), detach, character.only = TRUE)
+for (p in packs) detach(paste("package", p, sep = ":"), character.only = TRUE)
 rm(list = ls()[!(ls() %in% clean_workspace)])

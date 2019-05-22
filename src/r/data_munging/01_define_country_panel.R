@@ -12,7 +12,7 @@ if(any(missing)) {
     cat("Installing missing packages: ", packs[missing], "\n")
     install.packages(packs[missing], dependencies = TRUE)
 }
-lapply(packs, library, character.only = TRUE)
+for (p in packs) library(p, character.only = TRUE, quietly = TRUE)
 
 
 # Get panel from countrycode data
