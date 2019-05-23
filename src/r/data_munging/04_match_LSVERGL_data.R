@@ -39,7 +39,7 @@ new_content <- c("election_date", "election_id", "twobiggest_parties", "blocvote
 
 # Define Data Objects
 lsvergl <- read.dta(
-    file.path(path_project, "dta", "raw", "PEC_LSVERGL_1.dta")
+    file.path(path_project, "dta", "raw", "PEC_LSVERGL_2.dta")
 ) %>%
     mutate(in_lsvergl = 1) # flag for country_panel
 # Sanity check: Are panel entries uniquely identified?
