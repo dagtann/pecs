@@ -107,6 +107,7 @@ tmp <- plyr::join_all(
 tmp <- tmp[with(tmp, order(n_pecs)), ]
 names(tmp) <- col_names
 
+
 # Return table
 stargazer(
     tmp,
@@ -121,6 +122,93 @@ for (p in packs) detach(paste("package", p, sep = ":"), character.only = TRUE)
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
 
+
+```{r, tablePecsByType, eval = FALSE}
+# This snippet returns the data required to reproduce table "XXX"
+rm(list = ls()[!(ls() %in% clean_workspace)])
+
+# functions
+flag_nas <- function(r) all(is.na(r))
+
+# constants
+pec_indicators <- paste0("pec", seq(7)) 
+
+# data objects
+pecs <- read_dta(
+    file.path(path_project, "dta", "raw", "PEC_raw_stable15_2.dta"),
+    encoding = "latin1"
+)
+
+suffixes <- c("type", "prog", "incumbent", "ea")
+pec_indicators_2_aggregate <- character(0)
+for (suffix in suffixes) {
+    pec_indicators_2_aggregate <- append(
+        pec_indicators_2_aggregate, paste(pec_indicators, suffix, sep = "_")
+    )
+}
+
+# filter data
+# (a) remove parties that did not enter PECs
+pecs[, "no_pecs"] <- apply(pecs[, pec_indicators], 1, flag_nas)
+pecs <- filter(pecs, !no_pecs)
+# (b) aggregate to single pec entry per election
+tmp <- subset(pecs, select = c("election_id", pec_indicators_2_aggregate))
+tmp <- aggregate(
+    x = as.data.frame(tmp[, -1]),
+    by = list(election_id = tmp[["election_id"]]),
+    FUN = function(x) ifelse(all(is.na(x)), NA, max(x, na.rm = TRUE))
+)
+# sanity check: n type codings <= nupec_neu
+sum(!is.na(tmp[, -1])) <= sum(country_panel$nupec_neu, na.rm = TRUE)
+# sanity check: n is.na(type) + n !(is.na(type)) == nupec_neu
+sum(apply(tmp[, -1], 1, flag_nas)) + sum(!is.na(tmp[, -1])) == sum(country_panel$nupec_neu, na.rm = TRUE)
+# FAILS! 29 all NA entries, should be 12
+
+# create table
+for (suffix in suffixes) {
+    selection <- paste(pec_indicators, suffix, sep = "_") 
+    assign(suffix, gather(tmp[, selection], "pec", "value", selection)[[2]])
+    # names(suffix, character.only = TRUE)
+}
+type <- factor(type, seq(6), c("Nomination agreement", "Joint list",
+    "Dual-ballot instructions", "Vote transfer instructions", "Public commitment",
+    "other"
+    )
+)
+for (i in suffixes[-1]){
+    assign(i, factor(get(i), 0:1, c("No", "Yes")))
+}
+lapply(mget(suffixes), function(x) cumsum(table(x)) / sum(table(x)))
+
+rm(list = ls()[!(ls() %in% clean_workspace)])
+```
+
+\begin{table}[htb]
+    \centering
+    \caption{Summary of pre-electoral coalition properties}
+    \label{tbl:SummaryPecProperties}
+    \begin{tabular}{ll*{3}{c}}
+    \toprule
+    Attribute & Value & Freq. & Cum. Freq. & Cum. Rel. Freq.\\
+    \midrule
+    Type & Nomination agreement & 72 & 72 & 0.14\\
+        ~ & Joint list & 204 & 276 & 0.63\\
+        ~ & Dual-ballot instructions & 1 & 277 & 0.64\\
+        ~ & Vote transfer instructions & 24 & 301 & 0.69\\
+        ~ & Public commitment & 119 & 420 & 0.96\\
+        ~ & Other & 16 & 436 & 1.00\\
+    \midrule
+    Joint program & No & 233 & 233 & 0.54\\
+        ~ & Yes & 197 & 430 & 1.00\\
+    \midrule
+    Incumbent coalition & No & 337 & 337 & 0.77\\
+        ~ & Yes & 99 & 436 & 1.00\\
+    \midrule
+    Electoral alliance & No & 83 & 83 & 0.71\\
+        ~ & Yes & 34 & 117 & 1.00\\
+    \bottomrule
+    \end{tabular}
+\end{table}
 
 
 # Results
