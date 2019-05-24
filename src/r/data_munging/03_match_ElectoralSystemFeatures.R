@@ -3,7 +3,10 @@
 # Author: Dag Tanneberg
 # Last update: 04/17/2019
 # Version info:
-#     04/17/2019 Rewrote & -factored after data loss
+#   05/22/2019 Added turnout to vdem import, fixed year2 bug in disproportionality
+#       NOTE: Also added gdp per capita from VDEM which is obviously not an
+#       institution
+#   04/17/2019 Rewrote & -factored after data loss
 # ================================================================================
 rm(list = ls()[!(ls() %in% clean_workspace)])
 packs <- c("data.table", "countrycode")
@@ -18,8 +21,8 @@ for (p in packs) library(p, character.only = TRUE, quietly = TRUE)
 # vdem data
 electoral_system <- fread(
     file.path(path_archive, "vdem", "v9", "V-Dem-CY-Full+Others-v9.csv"),
-    select = c("country_id", "year", "v2elloeldm",
-        "v2elcomvot", "v2elparlel", "v2ellovtlg", "v2ellovtsm"
+    select = c("country_id", "year", "v2elloeldm", "v2eltrnout",
+        "v2elcomvot", "v2elparlel", "v2ellovtlg", "v2ellovtsm", "e_migdppc"
     )
 )
 electoral_system <- rename(electoral_system, vdem = country_id)
@@ -46,10 +49,13 @@ disproportionality <- filter(disproportionality, !is.na(iso3c))
 # filter <- with(disproportionality, duplicated(paste(iso3c, year, sep = ":")))
 # table(filter)
 # disproportionality[filter, ] # Where is Great Britian 1974? -> Uses October
-disproportionality <- mutate(disproportionality,
-    year2 = year * 10 + duplicated(paste(iso3c, year, sep = ":")),
-    year2 = ifelse(iso3c == "GBR" & year2 == 19740, 19741, year2)
-)
+disproportionality <- mutate(disproportionality, year2 = year * 10) %>%
+    mutate(year2 = ifelse(
+        (iso3c == "IRL" & disproportionality > 2 & year == 1982) |
+        (iso3c == "GBR" & disproportionality > 15 & year == 1974) |
+        (iso3c == "GRC" & disproportionality > 4 & year == 1989),
+        year2 + 1, year2)
+    )
 # filter <- with(disproportionality, duplicated(paste(iso3c, year2, sep = ":")))
 # table(filter) ## All unique
 country_panel <- left_join(
