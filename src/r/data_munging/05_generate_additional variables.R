@@ -35,7 +35,7 @@ with(country_panel, table(largepec, largepec_neu))
 
 # Create cabinet member indicator
 cabinet <- readxl::read_excel(
-    file.path(path_project, "dta", "raw", "parlgov.xlsx"), sheet = "cabinet"
+    file.path(path_project, "dta", "raw", "parlgov-stable.xlsx"), sheet = "cabinet"
 )
 
 rm(list = ls()[!(ls() %in% clean_workspace)])
