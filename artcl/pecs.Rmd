@@ -131,7 +131,7 @@ rm(list = ls()[!(ls() %in% clean_workspace)])
 flag_nas <- function(r) all(is.na(r))
 
 # constants
-pec_indicators <- paste0("pec", seq(7)) 
+pec_indicators <- paste0("pec", seq(7))
 
 # data objects
 pecs <- read_dta(
@@ -166,7 +166,7 @@ sum(apply(tmp[, -1], 1, flag_nas)) + sum(!is.na(tmp[, -1])) == sum(country_panel
 
 # create table
 for (suffix in suffixes) {
-    selection <- paste(pec_indicators, suffix, sep = "_") 
+    selection <- paste(pec_indicators, suffix, sep = "_")
     assign(suffix, gather(tmp[, selection], "pec", "value", selection)[[2]])
     # names(suffix, character.only = TRUE)
 }
@@ -180,6 +180,40 @@ for (i in suffixes[-1]){
 }
 lapply(mget(suffixes), function(x) cumsum(table(x)) / sum(table(x)))
 
+rm(list = ls()[!(ls() %in% clean_workspace)])
+```
+
+```{r, edaPecOverTime}
+rm(list = ls()[!(ls() %in% clean_workspace)])
+nupec_per_year <- aggregate(
+    nupec_neu ~ year,
+    data = subset(country_panel, in_lsvergl == 1), FUN = sum
+)
+nelec_per_year <- aggregate(
+    election_id ~ year, data = subset(country_panel, in_lsvergl == 1),
+    FUN = function(x) length(x)
+)
+top <- merge(nupec_per_year, nelec_per_year, by = "year")
+bottom <- filter(country_panel, in_lsvergl) %>%
+    select(year, nupec_neu) %>%
+    mutate(pec = ifelse(nupec_neu > 0, 1, 0)) %>%
+    group_by(year) %>%
+    summarise_at(vars(pec), mean)
+pdta <- merge(top, bottom, by = "year")
+pdta <- gather(pdta, "key", "value", nupec_neu, election_id, pec)
+
+pdta <- within(pdta,
+    key_labels <- factor(as.character(key),
+        levels = c("nupec_neu", "election_id", "pec"),
+        labels = c("No. of PECs", "No. of elections", "Share of elections with PECs")
+    )
+)
+ggplot(data = pdta, aes(x = year, y = value)) +
+    geom_bar(stat = "identity", width = .9) +
+    facet_grid(key_labels ~ ., scales = "free_y") +
+    scale_x_continuous(breaks = seq(1945, 2015, 10)) +
+    labs(y = "Frequency") +
+    theme(axis.title.x = element_blank())
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
 
