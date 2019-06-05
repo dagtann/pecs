@@ -207,7 +207,7 @@ lapply(mget(suffixes), function(x) cumsum(table(x)) / sum(table(x)))
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
 
-```{r, edaPecOverTime}
+```{r, edaPecOverTime, fig.cap="Distribution of PECs over Time"}
 rm(list = ls()[!(ls() %in% clean_workspace)])
 
 
@@ -226,23 +226,14 @@ perc_pec_per_year <- filter(country_panel, in_lsvergl == 1) %>%
     mutate(pec = ifelse(nupec_neu > 0, 1, 0)) %>%
     group_by(year) %>%
     summarise_at(vars(pec), mean)
-mean_vshare_pec_per_year <- filter(country_panel, in_lsvergl == 1) %>%
-    select(year, pectotal_neu) %>%
-    group_by(year) %>%
-    summarise_at(vars(pectotal_neu), mean, na.rm = TRUE)
-pdta <- plyr::join_all(
-    list(
-        nupec_per_year, nelec_per_year, perc_pec_per_year, mean_vshare_pec_per_year
-    ),
+pdta <- plyr::join_all(list(nupec_per_year, nelec_per_year, perc_pec_per_year),
     by = "year", type = "inner"
 )
-pdta <- gather(pdta, "key", "value", nupec_neu, election_id, pec, pectotal_neu)
+pdta <- gather(pdta, "key", "value", nupec_neu, election_id, pec)
 pdta <- within(pdta,
     key_labels <- factor(as.character(key),
-        levels = c("nupec_neu", "election_id", "pec", "pectotal_neu"),
-        labels = c("No. of PECs", "No. of elections",
-            "Share elections with PECs", "Mean vote share for PECs"
-        )
+        levels = c("nupec_neu", "election_id", "pec"),
+        labels = c("No. of PECs", "No. of elections", "Share elections with PECs")
     )
 )
 
@@ -289,7 +280,118 @@ rm(list = ls()[!(ls() %in% clean_workspace)])
 
 # Results
 
+```{r, edaCommonTrend, fig.cap="Secular Trends in the Data"}
+rm(list = ls()[!(ls() %in% clean_workspace)])
 
+max_degree = 3
+raw_scores <- select(tillman, country, year, turnout_wi, pec1_wi, vote_pec_wi)
+
+sigma_wi <- group_by(raw_scores, country) %>%
+    summarise_at(.vars = vars(turnout_wi, pec1_wi, vote_pec_wi),
+        .funs = list(sigma = sd)
+    )
+z_scores <- left_join(raw_scores, sigma_wi, by = "country") %>%
+    mutate(turnout_wi_z = turnout_wi / turnout_wi_sigma) %>%
+    mutate(pec1_wi_z = pec1_wi / pec1_wi_sigma) %>%
+    mutate(vote_pec_wi_z = vote_pec_wi / vote_pec_wi_sigma)
+z_scores <- z_scores[, !grepl("[_wi, _sigma]$", names(z_scores), perl = TRUE)] # drop sigmas
+z_scores_all <- apply(raw_scores[, -(1:2)], 2, scale)
+colnames(z_scores_all) <- paste(colnames(z_scores_all), "z", sep="_")
+z_scores_all <- cbind.data.frame(raw_scores[, 1:2], z_scores_all)
+z_scores_all <- z_scores_all %>% mutate(country = "All")
+pdta <- rbind.data.frame(z_scores, z_scores_all)
+
+## Plot all trends
+ggplot(data = pdta, aes(x = year)) +
+    geom_smooth(aes(y = turnout_wi_z, linetype = "Turnout"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_smooth(aes(y = pec1_wi_z, linetype = "Pre-Electoral Coalition Entry"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_smooth(aes(y = vote_pec_wi_z, linetype = "Pre-Electoral Coalition Result"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_rug(sides = "b") +
+    scale_linetype_manual(values = rev(seq(3))) +
+    facet_wrap(vars(country)) +
+    labs(y = "Z-Standardized Within-Differences", linetype = "Cubic Polynomial for Trend in") +
+    ggthemes::theme_fivethirtyeight(base_size = base_size * .75) +
+    theme(
+        axis.title = element_text(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        axis.title.x = element_blank(),
+        legend.position = "bottom"
+    )
+```
+
+```{r, reportDetrendedResults}
+rm(list = ls()[!(ls() %in% clean_workspace)])
+packages <- c("plm", "sandwich", "lmtest", "texreg")
+for(i in packages){
+    if(!(i %in% rownames(installed.packages()))) {
+        cat("Now installing required package:\t", i)
+        install.packages(i, dependencies = TRUE)
+    }
+    library(i, character.only = TRUE)
+}
+
+# Declare string constants
+panel_id <- c("country", "year2")
+control <- paste(
+    c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome"),
+    collapse = " + "
+)
+treatments <- c("pec1", "vote_pec")
+response <- "turnout"
+trends <- c("factor(year)", "t_lin", "t_lin + t_squ + t_cub", "t_lin * iso3c")
+
+# Prepare data
+t_polynomials <- poly(tillman[["year"]], 3)
+colnames(t_polynomials) <- c("t_lin", "t_squ", "t_cub")
+data_to_fit <- cbind.data.frame(tillman, t_polynomials)
+data_to_fit <- pdata.frame(data_to_fit, index = c("iso3c", "year2"))
+
+fitted_models <- list()
+for (trend in trends){
+    for(treatment in treatments) {
+        assign(
+            "frm",
+            paste0(response, " ~ ", paste(treatment, control, trend, sep = " + "))
+        )
+        fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
+            as.formula(frm), model = "within", data = data_to_fit
+        )
+    }
+}
+bk_se <- lapply(fitted_models, function(x) vcovBK(x, cluster = "group"))
+bk_p <- lapply(fitted_models, function(x){
+        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
+    }
+)
+texreg(fitted_models, file = file.path(path_project, "artcl", "detrended_models.tex"),
+    digits = 2,
+    omit.coef = "(t_lin:)|(factor\\(year\\))",
+    override.se = lapply(bk_se, function(x){sqrt(diag(x))}),
+    override.p = lapply(fitted_models, function(x){
+        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
+    }),
+    custom.coef.names = c("PEC", "Parties", "Disproportionality", "PR",
+        "Plurality", "Closeness", "Economic Growth", "log(income)",
+        "Disproportionality $\\times$ PR",  "Plurality $\\times$ Closeness",
+        "Vote PEC", "$t$", "$t^2$", "$t^3$"
+    ),
+    reorder.coef = c(1, 11, 2:10, 12:14),
+    booktabs = TRUE,
+    stars = c(0.001,  0.01, 0.05, 0.1),
+    custom.note = "Panel corrected SEs in parantheses \\cite{Beck.1995}, clustered by country. Country-specific growth curves. %stars."
+) # NOTE: header changed manually in file
+# housekeeping
+for (p in packages) detach(paste("package", p, sep = ":"), character.only = TRUE)
+rm(list = ls()[!(ls() %in% clean_workspace)])
+```
+
+\include{detrended_models_manual_header}
 
 # Discussion
 
