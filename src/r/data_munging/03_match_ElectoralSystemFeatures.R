@@ -3,6 +3,7 @@
 # Author: Dag Tanneberg
 # Last update: 04/17/2019
 # Version info:
+#   05/06/2019 Added log gdp variable
 #   05/22/2019 Added turnout to vdem import, fixed year2 bug in disproportionality
 #       NOTE: Also added gdp per capita from VDEM which is obviously not an
 #       institution
@@ -33,7 +34,7 @@ electoral_system <- rename(electoral_system, vdem = country_id)
 # NOTE: Each panel entry is unique. Consequently, VDEM has a secret(?) method to
 #   deal with multiple elections within the same country-year.
 country_panel <- left_join(country_panel, electoral_system, by = c("vdem", "year"))
-
+country_panel <- mutate(country_panel, ln_e_migdppc = log(e_migdppc))
 
 # Gandrud disproportionality
 disproportionality <- fread(

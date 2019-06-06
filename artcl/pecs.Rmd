@@ -344,12 +344,13 @@ control <- paste(
 )
 treatments <- c("pec1", "vote_pec")
 response <- "turnout"
-trends <- c("factor(year)", "t_lin", "t_lin + t_squ + t_cub", "t_lin * iso3c")
+trends <- c("None", "factor(year)", "t_lin", "t_lin + t_squ + t_cub", "t_lin * iso3c")
 
 # Prepare data
-t_polynomials <- poly(tillman[["year"]], 3)
+data_to_fit <- filter(country_panel, in_tillman == 1)
+t_polynomials <- poly(data_to_fit[["year"]] - median(data_to_fit[["year"]]), 3)
 colnames(t_polynomials) <- c("t_lin", "t_squ", "t_cub")
-data_to_fit <- cbind.data.frame(tillman, t_polynomials)
+data_to_fit <- cbind.data.frame(data_to_fit, t_polynomials)
 data_to_fit <- pdata.frame(data_to_fit, index = c("iso3c", "year2"))
 
 fitted_models <- list()
@@ -359,6 +360,11 @@ for (trend in trends){
             "frm",
             paste0(response, " ~ ", paste(treatment, control, trend, sep = " + "))
         )
+        if(trend == "None"){
+            assign(
+                "frm", paste0(response, " ~ ", paste(treatment, control, sep = " + "))
+            )    
+        }
         fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
             as.formula(frm), model = "within", data = data_to_fit
         )
@@ -369,7 +375,8 @@ bk_p <- lapply(fitted_models, function(x){
         lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
     }
 )
-texreg(fitted_models, file = file.path(path_project, "artcl", "detrended_models.tex"),
+texreg(
+    fitted_models, file = file.path(path_project, "artcl", "detrended_models.tex"),
     digits = 2,
     omit.coef = "(t_lin:)|(factor\\(year\\))",
     override.se = lapply(bk_se, function(x){sqrt(diag(x))}),
@@ -382,7 +389,7 @@ texreg(fitted_models, file = file.path(path_project, "artcl", "detrended_models.
         "Vote PEC", "$t$", "$t^2$", "$t^3$"
     ),
     reorder.coef = c(1, 11, 2:10, 12:14),
-    booktabs = TRUE,
+    booktabs = TRUE, sideways = TRUE, 
     stars = c(0.001,  0.01, 0.05, 0.1),
     custom.note = "Panel corrected SEs in parantheses \\cite{Beck.1995}, clustered by country. Country-specific growth curves. %stars."
 ) # NOTE: header changed manually in file
