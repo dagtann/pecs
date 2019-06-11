@@ -40,7 +40,12 @@ names(country_panel) <- str_replace_all(names(country_panel), "\\.", "_")
 # iso3c is NA for numerous historical countries
 country_panel <- filter(country_panel, !is.na(iso3c))
 # Define 2nd composite key element -> NOTE 1
-country_panel[, "year2"] <- country_panel$year * 10
+country_panel <- mutate(country_panel, year2 = year * 10)
+# Define observation counter
+country_panel <- group_by(country_panel, iso3c) %>%
+    mutate(t = year - 1990) %>%
+    ungroup()
+
 
 # housekeeping
 clean_workspace <- append(clean_workspace, "country_panel")

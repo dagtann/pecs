@@ -56,6 +56,278 @@ elections.
 
 # What pre-electoral coalitions increase government identifiability?
 
+# Results
+
+## Replication
+
+\cite{Tillman.2015} marshalls a standard fixed-effects panel design in order to
+study the effect of pre-electoral coalitions on turnout in general elections.
+In the causal craze of this day and age fixed-effects designs have become the
+"gold standard" \cite[139]{Bell.2015} in many fields because they eliminate
+heterogeneity bias. More precisely, using data transformations such as, e.g.,
+demeaning or first-differencing, fixed-effects designs remove time-invariant
+unit-specific unobservables, i.e. permanent properties not realized in the
+sample \cite[508]{Halaby.2004}, and they yield unbiased estimators of a
+hypothesized causal effect as long as the disturbances are mean-independent of
+the independent variable(s) across \textit{all} measurement occasions
+\cite[482]{Wooldridge.2009}. Notwithstanding, there is a number of
+misspecifications which fixed-effects designs are ill-equipped for. Scholars
+should distrust fixed-effects estimators whenever there is reason to suspect
+"the presence of any dynamic misspecification or omitted time-varying
+variables" including trends among other things \cite[26]{Pluemper.2018}. Using
+a number of different approaches, the following section demonstrates that a
+shared trend in turnout and the presence of pre-electoral coalitions biases
+most of Tillman's original results, even though there remains reason to believe
+that some PECs are more important than others.
+
+\textbf{Explain why shared trends bias results} \Blindtext[1][1]
+
+```{r, edaNonStationarity, fig.cap="Non-Stationarity in the Data", fig.lp="fig:"}
+rm(list = ls()[!(ls() %in% clean_workspace)])
+pdta <- filter(country_panel, in_tillman == 1) %>%
+    select(iso3c, year, turnout, pec1, vote_pec) %>%
+    mutate(turnout = turnout / 100, vote_pec = vote_pec / 100)
+tmp <- aggregate(
+    pdta[, c("turnout", "pec1", "vote_pec")],
+    list(year = pdta[["year"]]),
+    FUN = mean, na.rm = TRUE
+)
+tmp[, "statistic"] <- "mu"
+tmp2 <- aggregate(
+    pdta[, c("turnout", "pec1", "vote_pec")],
+    list(year = pdta[["year"]]),
+    FUN = sd, na.rm = TRUE
+)
+tmp2[, "statistic"] <- "sigma"
+pdta <- bind_rows(tmp, tmp2) %>%
+    gather("key", "value", turnout, pec1, vote_pec) %>%
+    mutate(
+        key_labels = factor(
+            key, levels = c("turnout", "pec1", "vote_pec"),
+            labels = c("Turnout", "PEC contested", "PEC votes")
+        ),
+        statistic_labels = factor(statistic, levels = c("mu", "sigma"),
+                labels = c("Mean", "Std. Dev.")
+            )
+    )
+ggplot(data = pdta, aes(x = year, y = value)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, formula = y ~ poly(x, 3), colour = "black", size = .7) +
+    facet_grid(statistic_labels ~ key_labels) +
+    labs(caption = "Note: Features rescaled to unit-ranges. Cubic polynomials added."
+    ) +
+    ggthemes::theme_fivethirtyeight()
+```
+
+Figure \ref{fig:edaNonStationarity} highlights the potential for
+non-stationarity in Tillman's data on turnout and pre-electoral coalitions. It
+plots the mean (top row) and standard deviation (bottom row) for each of the
+three key variables against time. Cubic polynomials characterize potential
+trends in those first and second moments across time. If the data are
+stationary, then their mean and variance will only randomly
+fluctuate.\footnote{In fact, stationarity implies that a distribution is does
+not change in \textit{any} of its moments.} However, Figure
+\ref{fig:edaNonStationarity} implies systematic time-dependencies. First,
+in line with extant research average turnout has declined for the past fourty
+years. Starting at 88 per cent in 1970, it reaches an all-time low at 66 per
+cent in the year 2000 and shows no strong sign of reversion until the end of the
+observation period. Second, pre-electoral coalitions exhibit a more complex,
+though not entirely unrelated trend. As shown in the middling panel of the top
+row, PECs become more prevalent until the mid-1980s. Later on, their attraction
+nosedives and continously declines -- in tandem with turnout. Voting results for
+PECs as well as the variance in each indicator do not exhibit such clear-cut
+patterns. Notwithstanding, the gist of Tillman's argument critically
+depends on the information voters receive when PECs form, and
+Figure \ref{fig:edaNonStationarity} suggests that the supporting evidence of
+this argument may be entirely spurious.
+
+Advocates of pre-electoral coalitions should not prematurely abondon ship,
+though, as the preceeding analysis does not account for unit heterogenity.
+The 22 parliamentary democracies in the data differ substantially with regard
+to the (dis-)incentives they provide for voter turnout and pre-electoral
+coalition bargains among political parties. For instance, compulsory voting in
+Luxembourg has all but immunized the country from the blatant decrease
+in turnout across established democracies. Moreover, firmly majoritarian
+electoral systems such as the British FPP provide stronger incentives for the
+formation of pre-electoral coalitions than proportional systems
+\cite{Golder.2006}. Hence, the earlier impression of shared trends in turnout
+and the formation of pre-electoral coalitions may entirely be driven by the
+very reason that motivates fixed-effects models in the first place: unobserved
+heterogeneity among the units.
+
+
+
+few if  New Zealands move from a
+majoritarian to a proportional system
+
+ the
+electoral system in
+reform
+
+it is well known that
+
+, though Heralds of pre-electoral coaltions should not immediately abondon ship, because
+
+
+ This is no foregone conclusion though,
+
+
+The principal objection to the exploratory analysis above
+
+Figure \ref{fig:edaCommonTrend} makes the same point from a different
+perspective.
+
+```{r, edaCommonTrend, fig.cap="Secular Trends in the Data", fig.lp="fig:"}
+rm(list = ls()[!(ls() %in% clean_workspace)])
+
+max_degree = 3
+raw_scores <- select(tillman, country, year, turnout_wi, pec1_wi, vote_pec_wi)
+
+sigma_wi <- group_by(raw_scores, country) %>%
+    summarise_at(.vars = vars(turnout_wi, pec1_wi, vote_pec_wi),
+        .funs = list(sigma = sd)
+    )
+z_scores <- left_join(raw_scores, sigma_wi, by = "country") %>%
+    mutate(turnout_wi_z = turnout_wi / turnout_wi_sigma) %>%
+    mutate(pec1_wi_z = pec1_wi / pec1_wi_sigma) %>%
+    mutate(vote_pec_wi_z = vote_pec_wi / vote_pec_wi_sigma)
+z_scores <- z_scores[, !grepl("[_wi, _sigma]$", names(z_scores), perl = TRUE)] # drop sigmas
+z_scores_all <- apply(raw_scores[, -(1:2)], 2, scale)
+colnames(z_scores_all) <- paste(colnames(z_scores_all), "z", sep="_")
+z_scores_all <- cbind.data.frame(raw_scores[, 1:2], z_scores_all)
+z_scores_all <- z_scores_all %>% mutate(country = "All")
+pdta <- rbind.data.frame(z_scores, z_scores_all)
+
+## Plot all trends
+ggplot(data = pdta, aes(x = year)) +
+    geom_smooth(aes(y = turnout_wi_z, linetype = "Turnout"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_smooth(aes(y = pec1_wi_z, linetype = "Pre-Electoral Coalition Entry"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_smooth(aes(y = vote_pec_wi_z, linetype = "Pre-Electoral Coalition Result"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_rug(sides = "b") +
+    scale_linetype_manual(values = rev(seq(3))) +
+    facet_wrap(vars(country)) +
+    labs(y = "Z-Standardized Within-Differences", linetype = "Cubic Polynomial for Trend in") +
+    ggthemes::theme_fivethirtyeight(base_size = base_size * .75) +
+    theme(
+        axis.title = element_text(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        axis.title.x = element_blank(),
+        legend.position = "bottom"
+    )
+```
+
+```{r, reportDetrendedResults, eval=FALSE}
+rm(list = ls()[!(ls() %in% clean_workspace)])
+packages <- c("plm", "sandwich", "lmtest", "texreg")
+for(i in packages){
+    if(!(i %in% rownames(installed.packages()))) {
+        cat("Now installing required package:\t", i)
+        install.packages(i, dependencies = TRUE)
+    }
+    library(i, character.only = TRUE)
+}
+
+# Declare string constants
+panel_id <- c("country", "year2")
+control <- paste(
+    c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome"),
+    collapse = " + "
+)
+treatments <- c("pec1", "vote_pec")
+response <- "turnout"
+trends <- c("None" = "None", "Twoways" = "twoways", "FD" = "fd",
+    "Common trend" = "t", "Unit-specific Trend" = "t * iso3c","LDV" = "turnout_l1"
+)
+
+# Prepare data
+data_to_fit <- filter(country_panel, in_tillman == 1) %>% filter((iso3c %in% c("LUX", "CAN")) == FALSE)
+data_to_fit <- group_by(data_to_fit, iso3c) %>%
+    mutate(turnout_l1 = dplyr::lag(turnout, n = 1, order_by = year2)) %>%
+    ungroup()
+data_to_fit <- pdata.frame(data_to_fit, index = c("iso3c", "year2"))
+
+fitted_models <- list()
+for (trend in trends){
+    for(treatment in treatments) {
+        assign(
+            "frm",
+            paste0(response, " ~ ", paste(treatment, control, trend, sep = " + "))
+        )
+        if (trend == "None") {
+            assign(
+                "frm", paste0(response, " ~ ", paste(treatment, control, sep = " + "))
+            )
+        }
+        if (trend == c("twoways")) {
+            assign("frm", paste0(response, " ~ ", paste(treatment, control, sep = " + ")))
+            fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
+                as.formula(frm), effect = "twoways", model = "within", data = data_to_fit
+            )
+            next
+        }
+        if (trend == c("fd")) {
+            assign("frm", paste0(response, " ~ ", paste(treatment, control, sep = " + ")))
+            fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
+                as.formula(frm), effect = "individual", model = "fd",
+                data = data_to_fit
+            )
+            next
+        }
+        fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
+            as.formula(frm), model = "within", data = data_to_fit
+        )
+    }
+}
+bk_se <- lapply(fitted_models, function(x) vcovBK(x, cluster = "group"))
+bk_p <- lapply(fitted_models, function(x){
+        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
+    }
+)
+
+vcovBK(fitted_models[[-5]], cluster = "time")
+
+texreg(
+    fitted_models, file = file.path(path_project, "artcl", "detrended_models.tex"),
+    digits = 2,
+    omit.coef = "(t:)|(factor\\(year\\))",
+    override.se = lapply(bk_se, function(x){sqrt(diag(x))}),
+    override.p = lapply(fitted_models, function(x){
+        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
+    }),
+    custom.coef.names = c("PEC", "Parties", "Disproportionality", "PR",
+        "Plurality", "Closeness", "Economic Growth", "log(income)",
+        "Disproportionality $\\times$ PR",  "Plurality $\\times$ Closeness",
+        "Vote PEC", "$t$", "Turnout$_{t-1}$"
+    ),
+    reorder.coef = c(1, 11, 2:10, 12:13),
+    booktabs = TRUE, sideways = TRUE,
+    stars = c(0.001,  0.01, 0.05, 0.1),
+    custom.note = "Panel corrected SEs in parantheses \\cite{Beck.1995}, clustered by country. Country-specific growth curves. %stars."
+)
+# Clean up
+tmp <- readLines(file.path(path_project, "artcl", "detrended_models.tex"))
+tmp <- tmp[!(tmp == "")]  # drop empty strings
+tmp <- tmp[!grepl("\\usepackage", tmp)]  # drop usepackage entries
+tmp[grepl("[a-z]\\_[a-z]", tmp)] <- paste("Technique", "\\multicolumn{2}{c}{None}",
+    "\\multicolumn{2}{c}{Year FE}", "\\multicolumn{2}{c}{Linear Trend}",
+    "\\multicolumn{2}{c}{Unit-specific Trend}", "\\multicolumn{2}{c}{LDV} \\\\",
+    sep = " & "
+)  # replace table header
+writeLines(tmp, con = file.path(path_project, "artcl", "detrended_models.tex"))
+
+# housekeeping
+for (p in packages) detach(paste("package", p, sep = ":"), character.only = TRUE)
+rm(list = ls()[!(ls() %in% clean_workspace)])
+```
+
+\include{detrended_models}
+
 # Introducing the data
 
 Following \cite{Golder.2006}, we regard as pre-electoral coalition any group of parties that publicly and mutually announces its intention to form or continue
@@ -207,6 +479,34 @@ lapply(mget(suffixes), function(x) cumsum(table(x)) / sum(table(x)))
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
 
+\begin{table}[htb]
+    \centering
+    \caption{Summary of pre-electoral coalition properties}
+    \label{tbl:SummaryPecProperties}
+    \begin{tabular}{llccc}
+    \toprule
+    Attribute & Value & Freq. & Cum. Freq. & Cum. Rel. Freq.\\
+    \midrule
+    Type & Nomination agreement & 72 & 72 & 0.14\\
+        ~ & Joint list & 204 & 276 & 0.63\\
+        ~ & Dual-ballot instructions & 1 & 277 & 0.64\\
+        ~ & Vote transfer instructions & 24 & 301 & 0.69\\
+        ~ & Public commitment & 119 & 420 & 0.96\\
+        ~ & Other & 16 & 436 & 1.00\\
+    \midrule
+    Joint program & No & 233 & 233 & 0.54\\
+        ~ & Yes & 197 & 430 & 1.00\\
+    \midrule
+    Incumbent coalition & No & 337 & 337 & 0.77\\
+        ~ & Yes & 99 & 436 & 1.00\\
+    \midrule
+    Electoral alliance & No & 83 & 83 & 0.71\\
+        ~ & Yes & 34 & 117 & 1.00\\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+
 ```{r, edaPecOverTime, fig.cap="Distribution of PECs over Time"}
 rm(list = ls()[!(ls() %in% clean_workspace)])
 
@@ -249,156 +549,6 @@ ggplot(data = pdta, aes(x = year, y = value)) +
 # housekeeping
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
-
-\begin{table}[htb]
-    \centering
-    \caption{Summary of pre-electoral coalition properties}
-    \label{tbl:SummaryPecProperties}
-    \begin{tabular}{ll*{3}{c}}
-    \toprule
-    Attribute & Value & Freq. & Cum. Freq. & Cum. Rel. Freq.\\
-    \midrule
-    Type & Nomination agreement & 72 & 72 & 0.14\\
-        ~ & Joint list & 204 & 276 & 0.63\\
-        ~ & Dual-ballot instructions & 1 & 277 & 0.64\\
-        ~ & Vote transfer instructions & 24 & 301 & 0.69\\
-        ~ & Public commitment & 119 & 420 & 0.96\\
-        ~ & Other & 16 & 436 & 1.00\\
-    \midrule
-    Joint program & No & 233 & 233 & 0.54\\
-        ~ & Yes & 197 & 430 & 1.00\\
-    \midrule
-    Incumbent coalition & No & 337 & 337 & 0.77\\
-        ~ & Yes & 99 & 436 & 1.00\\
-    \midrule
-    Electoral alliance & No & 83 & 83 & 0.71\\
-        ~ & Yes & 34 & 117 & 1.00\\
-    \bottomrule
-    \end{tabular}
-\end{table}
-
-
-# Results
-
-```{r, edaCommonTrend, fig.cap="Secular Trends in the Data"}
-rm(list = ls()[!(ls() %in% clean_workspace)])
-
-max_degree = 3
-raw_scores <- select(tillman, country, year, turnout_wi, pec1_wi, vote_pec_wi)
-
-sigma_wi <- group_by(raw_scores, country) %>%
-    summarise_at(.vars = vars(turnout_wi, pec1_wi, vote_pec_wi),
-        .funs = list(sigma = sd)
-    )
-z_scores <- left_join(raw_scores, sigma_wi, by = "country") %>%
-    mutate(turnout_wi_z = turnout_wi / turnout_wi_sigma) %>%
-    mutate(pec1_wi_z = pec1_wi / pec1_wi_sigma) %>%
-    mutate(vote_pec_wi_z = vote_pec_wi / vote_pec_wi_sigma)
-z_scores <- z_scores[, !grepl("[_wi, _sigma]$", names(z_scores), perl = TRUE)] # drop sigmas
-z_scores_all <- apply(raw_scores[, -(1:2)], 2, scale)
-colnames(z_scores_all) <- paste(colnames(z_scores_all), "z", sep="_")
-z_scores_all <- cbind.data.frame(raw_scores[, 1:2], z_scores_all)
-z_scores_all <- z_scores_all %>% mutate(country = "All")
-pdta <- rbind.data.frame(z_scores, z_scores_all)
-
-## Plot all trends
-ggplot(data = pdta, aes(x = year)) +
-    geom_smooth(aes(y = turnout_wi_z, linetype = "Turnout"),
-        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
-    ) +
-    geom_smooth(aes(y = pec1_wi_z, linetype = "Pre-Electoral Coalition Entry"),
-        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
-    ) +
-    geom_smooth(aes(y = vote_pec_wi_z, linetype = "Pre-Electoral Coalition Result"),
-        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
-    ) +
-    geom_rug(sides = "b") +
-    scale_linetype_manual(values = rev(seq(3))) +
-    facet_wrap(vars(country)) +
-    labs(y = "Z-Standardized Within-Differences", linetype = "Cubic Polynomial for Trend in") +
-    ggthemes::theme_fivethirtyeight(base_size = base_size * .75) +
-    theme(
-        axis.title = element_text(),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        axis.title.x = element_blank(),
-        legend.position = "bottom"
-    )
-```
-
-```{r, reportDetrendedResults}
-rm(list = ls()[!(ls() %in% clean_workspace)])
-packages <- c("plm", "sandwich", "lmtest", "texreg")
-for(i in packages){
-    if(!(i %in% rownames(installed.packages()))) {
-        cat("Now installing required package:\t", i)
-        install.packages(i, dependencies = TRUE)
-    }
-    library(i, character.only = TRUE)
-}
-
-# Declare string constants
-panel_id <- c("country", "year2")
-control <- paste(
-    c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome"),
-    collapse = " + "
-)
-treatments <- c("pec1", "vote_pec")
-response <- "turnout"
-trends <- c("None", "factor(year)", "t_lin", "t_lin + t_squ + t_cub", "t_lin * iso3c")
-
-# Prepare data
-data_to_fit <- filter(country_panel, in_tillman == 1)
-t_polynomials <- poly(data_to_fit[["year"]] - median(data_to_fit[["year"]]), 3)
-colnames(t_polynomials) <- c("t_lin", "t_squ", "t_cub")
-data_to_fit <- cbind.data.frame(data_to_fit, t_polynomials)
-data_to_fit <- pdata.frame(data_to_fit, index = c("iso3c", "year2"))
-
-fitted_models <- list()
-for (trend in trends){
-    for(treatment in treatments) {
-        assign(
-            "frm",
-            paste0(response, " ~ ", paste(treatment, control, trend, sep = " + "))
-        )
-        if(trend == "None"){
-            assign(
-                "frm", paste0(response, " ~ ", paste(treatment, control, sep = " + "))
-            )    
-        }
-        fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
-            as.formula(frm), model = "within", data = data_to_fit
-        )
-    }
-}
-bk_se <- lapply(fitted_models, function(x) vcovBK(x, cluster = "group"))
-bk_p <- lapply(fitted_models, function(x){
-        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
-    }
-)
-texreg(
-    fitted_models, file = file.path(path_project, "artcl", "detrended_models.tex"),
-    digits = 2,
-    omit.coef = "(t_lin:)|(factor\\(year\\))",
-    override.se = lapply(bk_se, function(x){sqrt(diag(x))}),
-    override.p = lapply(fitted_models, function(x){
-        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
-    }),
-    custom.coef.names = c("PEC", "Parties", "Disproportionality", "PR",
-        "Plurality", "Closeness", "Economic Growth", "log(income)",
-        "Disproportionality $\\times$ PR",  "Plurality $\\times$ Closeness",
-        "Vote PEC", "$t$", "$t^2$", "$t^3$"
-    ),
-    reorder.coef = c(1, 11, 2:10, 12:14),
-    booktabs = TRUE, sideways = TRUE, 
-    stars = c(0.001,  0.01, 0.05, 0.1),
-    custom.note = "Panel corrected SEs in parantheses \\cite{Beck.1995}, clustered by country. Country-specific growth curves. %stars."
-) # NOTE: header changed manually in file
-# housekeeping
-for (p in packages) detach(paste("package", p, sep = ":"), character.only = TRUE)
-rm(list = ls()[!(ls() %in% clean_workspace)])
-```
-
-\include{detrended_models_manual_header}
 
 # Discussion
 
