@@ -104,7 +104,7 @@ pdta <- bind_rows(tmp, tmp2) %>%
     mutate(
         key_labels = factor(
             key, levels = c("turnout", "pec1", "vote_pec"),
-            labels = c("Turnout", "PEC contested", "PEC votes")
+            labels = c("Turnout", "PEC contested", "Vote PEC")
         ),
         statistic_labels = factor(statistic, levels = c("mu", "sigma"),
                 labels = c("Mean", "Std. Dev.")
@@ -156,73 +156,7 @@ very reason that motivates fixed-effects models in the first place: unobserved
 heterogeneity among the units.
 
 
-
-few if  New Zealands move from a
-majoritarian to a proportional system
-
- the
-electoral system in
-reform
-
-it is well known that
-
-, though Heralds of pre-electoral coaltions should not immediately abondon ship, because
-
-
- This is no foregone conclusion though,
-
-
-The principal objection to the exploratory analysis above
-
-Figure \ref{fig:edaCommonTrend} makes the same point from a different
-perspective.
-
-```{r, edaCommonTrend, fig.cap="Secular Trends in the Data", fig.lp="fig:"}
-rm(list = ls()[!(ls() %in% clean_workspace)])
-
-max_degree = 3
-raw_scores <- select(tillman, country, year, turnout_wi, pec1_wi, vote_pec_wi)
-
-sigma_wi <- group_by(raw_scores, country) %>%
-    summarise_at(.vars = vars(turnout_wi, pec1_wi, vote_pec_wi),
-        .funs = list(sigma = sd)
-    )
-z_scores <- left_join(raw_scores, sigma_wi, by = "country") %>%
-    mutate(turnout_wi_z = turnout_wi / turnout_wi_sigma) %>%
-    mutate(pec1_wi_z = pec1_wi / pec1_wi_sigma) %>%
-    mutate(vote_pec_wi_z = vote_pec_wi / vote_pec_wi_sigma)
-z_scores <- z_scores[, !grepl("[_wi, _sigma]$", names(z_scores), perl = TRUE)] # drop sigmas
-z_scores_all <- apply(raw_scores[, -(1:2)], 2, scale)
-colnames(z_scores_all) <- paste(colnames(z_scores_all), "z", sep="_")
-z_scores_all <- cbind.data.frame(raw_scores[, 1:2], z_scores_all)
-z_scores_all <- z_scores_all %>% mutate(country = "All")
-pdta <- rbind.data.frame(z_scores, z_scores_all)
-
-## Plot all trends
-ggplot(data = pdta, aes(x = year)) +
-    geom_smooth(aes(y = turnout_wi_z, linetype = "Turnout"),
-        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
-    ) +
-    geom_smooth(aes(y = pec1_wi_z, linetype = "Pre-Electoral Coalition Entry"),
-        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
-    ) +
-    geom_smooth(aes(y = vote_pec_wi_z, linetype = "Pre-Electoral Coalition Result"),
-        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
-    ) +
-    geom_rug(sides = "b") +
-    scale_linetype_manual(values = rev(seq(3))) +
-    facet_wrap(vars(country)) +
-    labs(y = "Z-Standardized Within-Differences", linetype = "Cubic Polynomial for Trend in") +
-    ggthemes::theme_fivethirtyeight(base_size = base_size * .75) +
-    theme(
-        axis.title = element_text(),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        axis.title.x = element_blank(),
-        legend.position = "bottom"
-    )
-```
-
-```{r, reportDetrendedResults, eval=FALSE}
+```{r, reportDetrendedResults, fig.cap="Detrended Effect Estimates", fig.lp="fig:"}
 rm(list = ls()[!(ls() %in% clean_workspace)])
 packages <- c("plm", "sandwich", "lmtest", "texreg")
 for(i in packages){
@@ -233,49 +167,75 @@ for(i in packages){
     library(i, character.only = TRUE)
 }
 
+
+# Declare Functions
+extract_results <- function (model, of.interest = NULL, pcse = "group") {
+    out <- cbind(beta = coef(model), se = sqrt(diag(vcov(model))))
+    if(!is.null(pcse)) {
+        out[, "se"] <- sqrt(diag(plm::vcovBK(model, cluster = pcse)))
+    }
+    if (!is.null(of.interest)) {
+        out <- out[grep(of.interest, rownames(out), perl=TRUE), ]
+    }
+    return(out)
+}
+
+
 # Declare string constants
 panel_id <- c("country", "year2")
 control <- paste(
     c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome"),
     collapse = " + "
 )
-treatments <- c("pec1", "vote_pec")
+treatments <- c("PEC contested" = "pec1", "Vote PEC" = "vote_pec")
 response <- "turnout"
-trends <- c("None" = "None", "Twoways" = "twoways", "FD" = "fd",
-    "Common trend" = "t", "Unit-specific Trend" = "t * iso3c","LDV" = "turnout_l1"
+trends <- c("None"="None", "Two-way Error\nComponent"="twoways",
+    "First\nDifference"="fd", "Common\nTrend"="t",
+    "Unit-specific\nTrend"="t*iso3c", "Lagged DV"="turnout_l1"
 )
 
+
 # Prepare data
-data_to_fit <- filter(country_panel, in_tillman == 1) %>% filter((iso3c %in% c("LUX", "CAN")) == FALSE)
-data_to_fit <- group_by(data_to_fit, iso3c) %>%
+data_to_fit <- filter(country_panel, (in_tillman == 1) & 
+    !(iso3c %in% c("LUX", "CAN"))
+) %>%
+    group_by(iso3c) %>%
     mutate(turnout_l1 = dplyr::lag(turnout, n = 1, order_by = year2)) %>%
     ungroup()
 data_to_fit <- pdata.frame(data_to_fit, index = c("iso3c", "year2"))
 
+
+# Fit models
 fitted_models <- list()
 for (trend in trends){
     for(treatment in treatments) {
         assign(
             "frm",
-            paste0(response, " ~ ", paste(treatment, control, trend, sep = " + "))
+            paste0(response, " ~ ", paste(treatment, control, trend, sep=" + "))
         )
         if (trend == "None") {
             assign(
-                "frm", paste0(response, " ~ ", paste(treatment, control, sep = " + "))
+                "frm", 
+                paste0(response, " ~ ", paste(treatment, control, sep=" + "))
             )
         }
         if (trend == c("twoways")) {
-            assign("frm", paste0(response, " ~ ", paste(treatment, control, sep = " + ")))
+            assign(
+                "frm",
+                paste0(response, " ~ ", paste(treatment, control, sep=" + "))
+            )
             fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
-                as.formula(frm), effect = "twoways", model = "within", data = data_to_fit
+                as.formula(frm), effect="twoways", model="within", data=data_to_fit
             )
             next
         }
         if (trend == c("fd")) {
-            assign("frm", paste0(response, " ~ ", paste(treatment, control, sep = " + ")))
+            assign(
+                "frm",
+                paste0(response, " ~ ", paste(treatment, control, sep = " + "))
+            )
             fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
-                as.formula(frm), effect = "individual", model = "fd",
-                data = data_to_fit
+                as.formula(frm), effect="individual", model="fd", data=data_to_fit
             )
             next
         }
@@ -284,42 +244,91 @@ for (trend in trends){
         )
     }
 }
-bk_se <- lapply(fitted_models, function(x) vcovBK(x, cluster = "group"))
-bk_p <- lapply(fitted_models, function(x){
-        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
-    }
+
+
+# Generate coefficient plot
+to_plot <- vapply(fitted_models[c(1:4, 7:12)],
+    FUN=extract_results, FUN.VALUE=numeric(2), of.interest="pec"
 )
+to_plot <- cbind(
+    to_plot, vapply(fitted_models[c("fd_pec1", "fd_vote_pec")],
+    FUN = function(model){
+        out <- cbind(beta = coef(model), se = sqrt(diag(vcov(model))))
+        out <- out[grep("pec", rownames(out), perl=TRUE), ]
+        return(out)
+    },
+    FUN.VALUE = numeric(2)
+    )
+)
+to_plot <- t(to_plot)
+treatment_locations <- str_locate(rownames(to_plot), "vote_pec$|pec1$")
+treatment_labels <- str_sub(rownames(to_plot), treatment_locations)
+treatment_labels <- factor(treatment_labels, treatments, names(treatments))
+trend_labels <- str_split_fixed(rownames(to_plot), "vote_pec|pec1", 2)[, 1]
+trend_labels <- str_sub(trend_labels, 1, str_locate(trend_labels, "_$")[, 1]-1)
+trend_labels <- factor(trend_labels, trends, names(trends))
+z <- qnorm(c(.1, .05) / 2, lower = FALSE)
+pdta <- tibble(beta=to_plot[, "beta"], se=to_plot[, "se"],
+    trend_label=trend_labels, treatment_label=treatment_labels
+) %>%
+    mutate(lower90 = beta - z[1] * se, upper90 = beta + z[1] * se) %>%
+    mutate(lower95 = beta - z[2] * se, upper95 = beta + z[2] * se)
+ggplot(data = pdta, aes(x = trend_label, y = beta)) +
+    geom_linerange(aes(ymin = lower95, ymax = upper95)) + 
+    geom_linerange(aes(ymin = lower90, ymax = upper90), size=1.1) +
+    geom_point(size = 2, shape = 21, fill = "white") +
+    labs(x = "Detrending Strategy", y = expression(hat(beta)),
+        caption = "Note: CIs at 90 and 95 per cent."
+    ) +
+    facet_grid(treatment_label ~ ., scales = "free") +
+    ggthemes::theme_fivethirtyeight() +
+    theme(axis.title = element_text(), axis.title.x = element_blank())
 
-vcovBK(fitted_models[[-5]], cluster = "time")
 
+# Return BTON
+ses <- lapply(fitted_models[c(1:4, 7:12)], vcovBK, cluster = "group")
+ses[["fd_pec1"]] <- vcov(fitted_models[["fd_pec1"]])
+ses[["fd_vote_pec"]] <- vcov(fitted_models[["fd_vote_pec"]])
+ses <- ses[names(fitted_models)]
+pvals <- lapply(names(fitted_models),
+    function(x) coeftest(fitted_models[[x]], vcov = ses[[x]])[, 4]
+)
+names(pvals)
+names(pvals) <- names(fitted_models)
 texreg(
-    fitted_models, file = file.path(path_project, "artcl", "detrended_models.tex"),
+    fitted_models, 
+    file = file.path(path_project, "artcl", "detrended_models.tex"),
     digits = 2,
-    omit.coef = "(t:)|(factor\\(year\\))",
-    override.se = lapply(bk_se, function(x){sqrt(diag(x))}),
-    override.p = lapply(fitted_models, function(x){
-        lmtest::coeftest(x, vcov = vcovBK(x, cluster = "group"))[, 4]
-    }),
-    custom.coef.names = c("PEC", "Parties", "Disproportionality", "PR",
+    omit.coef = "(t:)",
+    override.se = lapply(ses, function(x){sqrt(diag(x))}),
+    override.p = pvals,
+    custom.coef.names = c("PEC contested", "Parties", "Disproportionality", "PR",
         "Plurality", "Closeness", "Economic Growth", "log(income)",
         "Disproportionality $\\times$ PR",  "Plurality $\\times$ Closeness",
-        "Vote PEC", "$t$", "Turnout$_{t-1}$"
+        "Vote PEC", "Constant", "$t$", "Turnout$_{t-1}$"
     ),
-    reorder.coef = c(1, 11, 2:10, 12:13),
+    reorder.coef = c(1, 11, 2:10, 13, 14, 12),
     booktabs = TRUE, sideways = TRUE,
     stars = c(0.001,  0.01, 0.05, 0.1),
-    custom.note = "Panel corrected SEs in parantheses \\cite{Beck.1995}, clustered by country. Country-specific growth curves. %stars."
+    caption = "Replication Results",
+    label = "tbl:ReplicationResults",
+    custom.note = "Panel corrected SEs in parantheses \\cite{Beck.1995}, clustered by country. %stars."
 )
-# Clean up
+# Manual edits to BTON
 tmp <- readLines(file.path(path_project, "artcl", "detrended_models.tex"))
 tmp <- tmp[!(tmp == "")]  # drop empty strings
 tmp <- tmp[!grepl("\\usepackage", tmp)]  # drop usepackage entries
-tmp[grepl("[a-z]\\_[a-z]", tmp)] <- paste("Technique", "\\multicolumn{2}{c}{None}",
-    "\\multicolumn{2}{c}{Year FE}", "\\multicolumn{2}{c}{Linear Trend}",
-    "\\multicolumn{2}{c}{Unit-specific Trend}", "\\multicolumn{2}{c}{LDV} \\\\",
+tmp[grepl("[a-z]\\_[a-z]", tmp)] <- paste(
+    "Detrending Technique", "\\multicolumn{2}{c}{None}",
+    "\\multicolumn{2}{c}{2way EC}",
+    "\\multicolumn{2}{c}{FD}",
+    "\\multicolumn{2}{c}{Common Trend}",
+    "\\multicolumn{2}{c}{Unit-specific Trend}",
+    "\\multicolumn{2}{c}{LDV} \\\\",
     sep = " & "
 )  # replace table header
 writeLines(tmp, con = file.path(path_project, "artcl", "detrended_models.tex"))
+
 
 # housekeeping
 for (p in packages) detach(paste("package", p, sep = ":"), character.only = TRUE)
@@ -328,75 +337,7 @@ rm(list = ls()[!(ls() %in% clean_workspace)])
 
 \include{detrended_models}
 
-# Introducing the data
-
-Following \cite{Golder.2006}, we regard as pre-electoral coalition any group of parties that publicly and mutually announces its intention to form or continue
-a coalition government prior to election night. Obviously, such statements may
-differ in their degree of commitment. Some coalitions do not even agree on
-written terms whereas others present joint programs or field joint candidates.
-We provide new and unprecedentedly granular data on
-`r sprintf("%.0f", sum(country_panel$nupec_neu, na.rm=TRUE))` pre-electoral coalitions. Moreover, covering
-`r sprintf("%.0f", length(unique(country_panel$election_id[!is.na(country_panel$in_lsvergl)])))` elections held between $1945$ and $2015$ in `r sprintf("%.0f", length(unique(country_panel$iso3c[!is.na(country_panel$in_lsvergl)])))` non-presidential democracies our data
-provide the most complete survey of pre-electoral coalitions yet. Table \ref{tbl:summaryPecs} summarizes our data.
-
-```{r, pecsSummaryTable, results = "asis"}
-# EDA: Return basic data information table
-rm(list = ls()[!(ls() %in% clean_workspace)])
-packs <- c("lubridate", "stargazer")
-missing <- which(!(packs %in% rownames(installed.packages())))
-if (any(missing)) {
-    cat("Installing missing packages: ", packs[missing], "\n")
-    install.packages(packs[missing], dependencies = TRUE)
-}
-for (p in packs) library(p, character.only = TRUE, quietly = TRUE)
-
-# Constants
-col_names <- c("Country", "First election", "Last election",
-    "# Elections", "# PECs", "Min", "Med", "Max"
-)
-
-
-# Data objects
-tmp <- as_tibble(filter(country_panel, in_lsvergl == 1)) %>%
-    mutate(edate = ymd(election_date)) %>%
-    group_by(iso3c)
-first_election <- summarize_at(tmp, vars(edate), min) %>%
-    rename("first_election" = edate)
-last_election <- summarize_at(tmp, vars(edate), max) %>%
-    rename("last_election" = edate)
-n_elections <- summarize_at(tmp, vars(edate), function(x) length(unique(x))) %>%
-    rename("n_elections" = edate)
-n_pecs <- summarize_at(tmp, vars(nupec_neu), sum) %>%
-    rename("n_pecs" = nupec_neu)
-range_n_pecs <- summarize_at(tmp, vars(nupec_neu),
-    .funs = list(min = min, median = median, max = max)
-)
-tmp <- plyr::join_all(
-    list(first_election, last_election, n_elections, n_pecs, range_n_pecs),
-    by = "iso3c", type = "inner"
-)
-tmp <- tmp[with(tmp, order(n_pecs)), ]
-names(tmp) <- col_names
-
-
-# Return table
-stargazer(
-    tmp,
-    title = "Summary of pre-electoral coalitions and elections by country",
-    label = "tbl:summaryPecs",
-    summary = FALSE, style = "apsr", header = FALSE, rownames = FALSE
-)
-
-
-# housekeeping
-for (p in packs) detach(paste("package", p, sep = ":"), character.only = TRUE)
-rm(list = ls()[!(ls() %in% clean_workspace)])
-```
-
-For each country in our data, Table \ref{tbl:summaryPecs} reports the total number
-of elections and pre-electoral coalitions included as well as for each the
-minimum,  median, and maximum count of contending PECs.
-
+## Exploratory Analysis: What PECs matter?
 
 ```{r, tablePecsByType, eval = FALSE}
 # This snippet returns the data required to reproduce table "XXX"
@@ -499,13 +440,136 @@ rm(list = ls()[!(ls() %in% clean_workspace)])
     \midrule
     Incumbent coalition & No & 337 & 337 & 0.77\\
         ~ & Yes & 99 & 436 & 1.00\\
-    \midrule
-    Electoral alliance & No & 83 & 83 & 0.71\\
-        ~ & Yes & 34 & 117 & 1.00\\
     \bottomrule
     \end{tabular}
 \end{table}
 
+
+# Discussion
+
+# Conclusion
+
+# Appendix
+
+## Country-level trends
+
+```{r, edaCommonTrend, fig.cap="Secular Trends in the Data", fig.lp="fig:"}
+rm(list = ls()[!(ls() %in% clean_workspace)])
+
+max_degree = 3
+raw_scores <- select(tillman, country, year, turnout_wi, pec1_wi, vote_pec_wi)
+
+sigma_wi <- group_by(raw_scores, country) %>%
+    summarise_at(.vars = vars(turnout_wi, pec1_wi, vote_pec_wi),
+        .funs = list(sigma = sd)
+    )
+z_scores <- left_join(raw_scores, sigma_wi, by = "country") %>%
+    mutate(turnout_wi_z = turnout_wi / turnout_wi_sigma) %>%
+    mutate(pec1_wi_z = pec1_wi / pec1_wi_sigma) %>%
+    mutate(vote_pec_wi_z = vote_pec_wi / vote_pec_wi_sigma)
+z_scores <- z_scores[, !grepl("[_wi, _sigma]$", names(z_scores), perl = TRUE)] # drop sigmas
+z_scores_all <- apply(raw_scores[, -(1:2)], 2, scale)
+colnames(z_scores_all) <- paste(colnames(z_scores_all), "z", sep="_")
+z_scores_all <- cbind.data.frame(raw_scores[, 1:2], z_scores_all)
+z_scores_all <- z_scores_all %>% mutate(country = "All")
+pdta <- rbind.data.frame(z_scores, z_scores_all)
+
+## Plot all trends
+ggplot(data = pdta, aes(x = year)) +
+    geom_smooth(aes(y = turnout_wi_z, linetype = "Turnout"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_smooth(aes(y = pec1_wi_z, linetype = "Pre-Electoral Coalition Entry"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_smooth(aes(y = vote_pec_wi_z, linetype = "Pre-Electoral Coalition Result"),
+        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
+    ) +
+    geom_rug(sides = "b") +
+    scale_linetype_manual(values = rev(seq(3))) +
+    facet_wrap(vars(country)) +
+    labs(y = "Z-Standardized Within-Differences", linetype = "Cubic Polynomial for Trend in") +
+    ggthemes::theme_fivethirtyeight(base_size = base_size * .75) +
+    theme(
+        axis.title = element_text(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        axis.title.x = element_blank(),
+        legend.position = "bottom"
+    )
+```
+
+
+## Coverage of our data on PECs
+
+Following \cite{Golder.2006}, we regard as pre-electoral coalition any group of parties that publicly and mutually announces its intention to form or continue
+a coalition government prior to election night. Obviously, such statements may
+differ in their degree of commitment. Some coalitions do not even agree on
+written terms whereas others present joint programs or field joint candidates.
+We provide new and unprecedentedly granular data on
+`r sprintf("%.0f", sum(country_panel$nupec_neu, na.rm=TRUE))` pre-electoral coalitions. Moreover, covering
+`r sprintf("%.0f", length(unique(country_panel$election_id[!is.na(country_panel$in_lsvergl)])))` elections held between $1945$ and $2015$ in `r sprintf("%.0f", length(unique(country_panel$iso3c[!is.na(country_panel$in_lsvergl)])))` non-presidential democracies our data
+provide the most complete survey of pre-electoral coalitions yet. Table \ref{tbl:summaryPecs} summarizes our data.
+
+```{r, pecsSummaryTable, results = "asis"}
+# EDA: Return basic data information table
+rm(list = ls()[!(ls() %in% clean_workspace)])
+packs <- c("lubridate", "stargazer")
+missing <- which(!(packs %in% rownames(installed.packages())))
+if (any(missing)) {
+    cat("Installing missing packages: ", packs[missing], "\n")
+    install.packages(packs[missing], dependencies = TRUE)
+}
+for (p in packs) library(p, character.only = TRUE, quietly = TRUE)
+
+# Constants
+col_names <- c("Country", "First election", "Last election",
+    "# Elections", "# PECs", "Min", "Med", "Max"
+)
+
+
+# Data objects
+tmp <- as_tibble(filter(country_panel, in_lsvergl == 1)) %>%
+    mutate(edate = ymd(election_date)) %>%
+    group_by(iso3c)
+first_election <- summarize_at(tmp, vars(edate), min) %>%
+    rename("first_election" = edate)
+last_election <- summarize_at(tmp, vars(edate), max) %>%
+    rename("last_election" = edate)
+n_elections <- summarize_at(tmp, vars(edate), function(x) length(unique(x))) %>%
+    rename("n_elections" = edate)
+n_pecs <- summarize_at(tmp, vars(nupec_neu), sum) %>%
+    rename("n_pecs" = nupec_neu)
+range_n_pecs <- summarize_at(tmp, vars(nupec_neu),
+    .funs = list(min = min, median = median, max = max)
+)
+tmp <- plyr::join_all(
+    list(first_election, last_election, n_elections, n_pecs, range_n_pecs),
+    by = "iso3c", type = "inner"
+)
+tmp <- tmp[with(tmp, order(n_pecs)), ]
+names(tmp) <- col_names
+
+
+# Return table
+stargazer(
+    tmp,
+    title = "Summary of pre-electoral coalitions and elections by country",
+    label = "tbl:summaryPecs",
+    summary = FALSE, style = "apsr", header = FALSE, rownames = FALSE
+)
+
+
+# housekeeping
+for (p in packs) detach(paste("package", p, sep = ":"), character.only = TRUE)
+rm(list = ls()[!(ls() %in% clean_workspace)])
+```
+
+For each country in our data, Table \ref{tbl:summaryPecs} reports the total number
+of elections and pre-electoral coalitions included as well as for each the
+minimum,  median, and maximum count of contending PECs.
+
+
+## Trends in PECs
 
 ```{r, edaPecOverTime, fig.cap="Distribution of PECs over Time"}
 rm(list = ls()[!(ls() %in% clean_workspace)])
@@ -550,6 +614,3 @@ ggplot(data = pdta, aes(x = year, y = value)) +
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
 
-# Discussion
-
-# Conclusion
