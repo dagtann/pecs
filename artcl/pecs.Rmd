@@ -22,7 +22,7 @@ source("~/github/pecs/src/r/master.R")
 \lpage{XXX}
 \journalvolume{6}
 \journalissue{3}
-\doinumber{doi:10.1017/psrm.2016.XX}
+\doinumber{doi:10.1017/psrm.2016.XX}###
  -->
 
 \author{Steffen Ganghof, Sebastian Eppner, Dag Tanneberg}
@@ -196,7 +196,7 @@ trends <- c("None"="None", "Two-way Error\nComponent"="twoways",
 
 
 # Prepare data
-data_to_fit <- filter(country_panel, (in_tillman == 1) & 
+data_to_fit <- filter(country_panel, (in_tillman == 1) &
     !(iso3c %in% c("LUX", "CAN"))
 ) %>%
     group_by(iso3c) %>%
@@ -215,7 +215,7 @@ for (trend in trends){
         )
         if (trend == "None") {
             assign(
-                "frm", 
+                "frm",
                 paste0(response, " ~ ", paste(treatment, control, sep=" + "))
             )
         }
@@ -274,7 +274,7 @@ pdta <- tibble(beta=to_plot[, "beta"], se=to_plot[, "se"],
     mutate(lower90 = beta - z[1] * se, upper90 = beta + z[1] * se) %>%
     mutate(lower95 = beta - z[2] * se, upper95 = beta + z[2] * se)
 ggplot(data = pdta, aes(x = trend_label, y = beta)) +
-    geom_linerange(aes(ymin = lower95, ymax = upper95)) + 
+    geom_linerange(aes(ymin = lower95, ymax = upper95)) +
     geom_linerange(aes(ymin = lower90, ymax = upper90), size=1.1) +
     geom_point(size = 2, shape = 21, fill = "white") +
     labs(x = "Detrending Strategy", y = expression(hat(beta)),
@@ -296,7 +296,7 @@ pvals <- lapply(names(fitted_models),
 names(pvals)
 names(pvals) <- names(fitted_models)
 texreg(
-    fitted_models, 
+    fitted_models,
     file = file.path(path_project, "artcl", "detrended_models.tex"),
     digits = 2,
     omit.coef = "(t:)",

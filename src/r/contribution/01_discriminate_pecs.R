@@ -1,7 +1,7 @@
 rm(list = ls()[!(ls() %in% clean_workspace)])
 packs <- c("entropy")
 missing <- which(!(packs %in% rownames(installed.packages())))
-if(any(missing)) {
+if (any(missing)) {
     cat("Installing missing packages: ", packs[missing], "\n")
     install.packages(packs[missing], dependencies = TRUE,
         repos = "https://cloud.r-project.org"
@@ -24,7 +24,8 @@ length(unique(tmp$iso3c)) # sanity check: still 37 democracies?
 sum(tmp$election_id) # 564 elections
 summary(tmp) # 5 to 27 elections per country
 tmp[tmp$election_id >= median(tmp$election_id), ] # old democracies
-tmp[tmp$election_id < median(tmp$election_id), ] # 3rd wave democracies + LUX (5yr legislature)
+tmp[tmp$election_id < median(tmp$election_id), ]
+# 3rd wave democracies + LUX (5yr legislature)
 hist(tmp$election_id, breaks = 15) # apparent gap b/w 10 and 15 elections
 
 
@@ -34,7 +35,8 @@ pec_all <- read_dta( # load complete chair data
 )
 unique_countries <- sort(unique(pec_all$country_name_short))
 setdiff(unique(country_panel$iso3c[!filter]), unique_countries)
-sort(intersect(country_panel$iso3c[!filter], unique_countries)) == unique_countries
+sort(intersect(country_panel$iso3c[!filter], unique_countries)) ==
+    unique_countries
 # ERROR: country_panel lists five more country than there are in pec_all
 
 
@@ -51,7 +53,9 @@ tmp <- select(pec_all, c("country_name_short", "edate", pec_strings)) %>%
     select(-n)
 length(unique(tmp$name)) # 288 PECs
 n_unique_pecs_by_country <- aggregate(
-    name ~ iso3c, data = tmp, FUN = function(x){length(unique(x))}
+    name ~ iso3c, data = tmp, FUN = function(x) {
+        length(unique(x))
+    }
 )
 summary(n_unique_pecs_by_country$name) # 1 to 24, median 6.5, mean 9
 n_pec_tillman <- aggregate(pec1 ~ iso3c, data = tillman, FUN = sum)
@@ -68,11 +72,12 @@ tmp3 <- select(tillman, iso3c, pec1, pec_neu) %>%
     group_by(iso3c, source) %>%
     summarise_at("count", sum, na.rm = TRUE)
 
-ggplot(data = tmp3, aes(x = iso3c, y = count, fill = source)) + geom_bar(stat = "identity", position = "dodge")
+ggplot(data = tmp3, aes(x = iso3c, y = count, fill = source)) +
+    geom_bar(stat = "identity", position = "dodge")
 
 
 tmp <- vector("character", length = nrow(pec_all) * length(pec_strings))
-last_row_so_far = 0
+last_row_so_far <- 0
 for (i in seq(pec_strings)) {
     tmp[(last_row_so_far + 1):(i * nrow(pec_all))] <- pec_all[[pec_strings[i]]]
     last_row_so_far <- i * nrow(pec_all)
