@@ -10,16 +10,16 @@ for (p in packs) library(p, character.only = TRUE)
 rm(p)
 
 
-# Generate smallpec / largepec indicators
+# data objects
 pecs <- read_dta(
     file.path(path_project, "dta", "raw", "PEC_raw_stable15_2.dta"),
     encoding = "latin1"
 )
-
 pec_indicators <- grep("^[pec1-9]{4}$", names(pecs), perl = TRUE, value = TRUE)
-pec_shares <- paste(pec_indicators, "share", sep = "_")
 
-# calculate vote share for each pec
+
+# create by election smallpec / largepec indicators
+pec_shares <- paste(pec_indicators, "share", sep = "_")
 for (i in pec_indicators) {
     # cat("Processing on:", i, "\n")
     mask <- pecs[, i] == 1
@@ -43,6 +43,47 @@ country_panel[, "largepec_neu"] <- apply(
 # Sanity checks: Are there gross deviations?
 # with(country_panel, table(smallpec, smallpec_neu))
 # with(country_panel, table(largepec, largepec_neu))
+
+
+# create by election pec type indicators
+tmp <- aggregate(
+    pecs[, paste(pec_indicators, "type", sep = "_")],
+    list("election_id" = pecs$election_id),
+    FUN = function(x) ifelse(all(is.na(x)), 0, max(x, na.rm = TRUE))
+)
+type_lookup <- sort(unique(unlist(tmp[, -1])))
+tmp <- gather(tmp, "pec", "type", 2:ncol(tmp))
+res <- outer(tmp[["type"]], type_lookup, "==")
+res <- as.data.frame(cbind(res, tmp[["election_id"]]))
+colnames(res) <- c(paste0("any_type", type_lookup), "election_id")
+res <- na.omit(res)  # either all or no NA, all NA = not covered by pecs
+res <- within(res, count <- ave(seq(1, nrow(res)), election_id, FUN = seq_along))
+res <- subset(res, count == 1)
+res <- res[, -ncol(res)]
+country_panel <- left_join(country_panel, res, by = "election_id")
+
+
+# create by election incumb & program indicators
+to_aggregate <- paste(
+    pec_indicators,
+    rep(c("prog", "incumbent"), each = length(pec_indicators)), sep = "_")
+tmp <- aggregate(
+    pecs[, to_aggregate], list("election_id" = pecs$election_id),
+    FUN = function(x) ifelse(all(is.na(x)), 0, max(x, na.rm = TRUE)))
+res <- vapply(
+    c("prog", "incumbent"),
+    FUN = function(suffix) {
+        to_compare <- subset(tmp,  select = paste(pec_indicators, suffix, sep = "_"))
+        apply(to_compare, 1, FUN = function(r) {
+            ifelse(all(is.na(r)), 0, any(r == 1, na.rm = TRUE))})
+    },
+    FUN.VALUE = numeric(nrow(tmp))
+)
+res <- as.data.frame(cbind(res, tmp[["election_id"]]))
+colnames(res) <- c(paste("any", c("prog", "incumbent"), sep = "_"), "election_id")
+country_panel <- left_join(country_panel, res, by = "election_id")
+
+
 
 if (FALSE) {
 # Create cabinet member indicator

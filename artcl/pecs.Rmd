@@ -155,6 +155,48 @@ and the formation of pre-electoral coalitions may entirely be driven by the
 very reason that motivates fixed-effects models in the first place: unobserved
 heterogeneity among the units.
 
+```{r, reportSerialCorrelation, eval = FALSE}
+data_to_fit <- filter(
+    country_panel, in_tillman == 1 & !(iso3c %in% c("LUX", "CAN"))
+)
+data_to_fit <- pdata.frame(data_to_fit, index = c("iso3c", "year2"))
+fit_contested <- plm(
+    turnout ~ pec1 + enep + disprop * pr + plurality * closeness + growth +
+    lnincome, model = "within", data = data_to_fit
+)
+fit_result <- plm(
+    turnout ~ vote_pec + enep + disprop * pr + plurality * closeness + growth +
+    lnincome, model = "within", data = data_to_fit
+)
+vapply(list("contested" = fit_contested, "result" = fit_result), function(x) {
+    pdw <- pdwtest(x)[["statistic"]]
+    pbn <- pbnftest(x)[["statistic"]]
+    pbg1 <- pbgtest(x, order = 1)[["statistic"]]
+    pbg1_p <- pbgtest(x, order = 1)[["p.value"]]
+    pbg2 <- pbgtest(x, order = 2)[["statistic"]]
+    pbg2_p <- pbgtest(x, order = 2)[["p.value"]]
+    out <- c(pdw, pbn, pbg1, pbg1_p, pbg2, pbg2_p)
+    return(out)
+},
+    FUN.VALUE = numeric(6)
+)
+```
+
+\begin{table}
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        ~ & \multicolumn{2}{c}{Test Statistic} \\
+            & PEC contested & PEC result \\
+        \midrule
+        Durbin-Whatson & 1.2 & 1.2 \\
+        Modified Durbin-Whatson & 0.9 & 0.9 \\
+        Breusch-Godfrey $\chi^2_{AR(1)}$ & 48.1 & 44.7 \\
+        Breusch-Godfrey $\chi^2_{AR(2)}$ & 48.2 & 44.8 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Evidence for Serial Correlation in the Residuals}
+\end{table}
 
 ```{r, reportDetrendedResults, fig.cap="Detrended Effect Estimates", fig.lp="fig:"}
 rm(list = ls()[!(ls() %in% clean_workspace)])
@@ -286,6 +328,15 @@ ggplot(data = pdta, aes(x = trend_label, y = beta)) +
 
 
 # Return BTON
+ar_statistics <- vapply(fitted_models,
+    function(m) {
+        pdw <- pdwtest(m)[["statistic"]]
+        pbg1 <- pbgtest(m, order = 1)[["statistic"]]
+        pbg2 <- pbgtest(m, order = 2)[["statistic"]]
+        c(pdw, pbg1, pbg2)
+    },
+    FUN.VALUE = numeric(3)
+)
 ses <- lapply(fitted_models[c(1:4, 7:12)], vcovBK, cluster = "group")
 ses[["fd_pec1"]] <- vcov(fitted_models[["fd_pec1"]])
 ses[["fd_vote_pec"]] <- vcov(fitted_models[["fd_vote_pec"]])
@@ -327,6 +378,19 @@ tmp[grepl("[a-z]\\_[a-z]", tmp)] <- paste(
     "\\multicolumn{2}{c}{LDV} \\\\",
     sep = " & "
 )  # replace table header
+split_at <- which(tmp == "\\bottomrule")
+ar_labels <- c("Durbin-Watson",
+  "Breusch-Godfrey $\\chi^2_{AR(1)}$", "Breusch-Godfrey $\\chi^2_{AR(2)}$"
+)
+lines_to_add <- vector("character", length(ar_labels))
+for(i in seq(lines_to_add)) {
+    lines_to_add[i] <- paste0(
+        paste0(ar_labels[i], " & "),
+        paste(signif(ar_statistics[i, ], 3), collapse = " & "),
+        "\\\\"
+    )
+}
+tmp <- c(tmp[1:(split_at - 1)], lines_to_add, tmp[split_at:length(tmp)])
 writeLines(tmp, con = file.path(path_project, "artcl", "detrended_models.tex"))
 
 
@@ -337,7 +401,7 @@ rm(list = ls()[!(ls() %in% clean_workspace)])
 
 \include{detrended_models}
 
-## Exploratory Analysis: What PECs matter?
+## Exploratory Analysis: Which Pre-electoral Coalitions matter?
 
 ```{r, tablePecsByType, eval = FALSE}
 # This snippet returns the data required to reproduce table "XXX"
