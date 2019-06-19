@@ -85,44 +85,44 @@ country_panel <- left_join(country_panel, res, by = "election_id")
 
 
 
-if (FALSE) {
+if (FALSE) {  # Commented b/c massive problems on join
 # Create cabinet member indicator
-cabinets <- readxl::read_excel(
-    file.path(path_project, "dta", "raw", "parlgov-stable.xlsx"), sheet = "cabinet"
-) %>%
-mutate(
-    start_date = ymd(as.character(start_date)),
-    election_date = ymd(as.character(election_date))
+pecs <- read_dta(
+    file.path(path_project, "dta", "raw", "PEC_raw_stable15_2.dta"),
+    encoding = "latin1"
 )
-tmp <- select(cabinets, cabinet_id, party_id, cabinet_party) %>%
-    rename(previous_cabinet_id = cabinet_id)
+elections_pool <- unique(pecs$election_id)
+cabinets <- readxl::read_excel(
+    file.path(path_project, "dta", "raw", "parlgov-stable.xlsx"),
+    sheet = "cabinet"
+) %>%
+    mutate(
+        start_date = ymd(as.character(start_date)),
+        election_date = ymd(as.character(election_date))
+    ) %>%
+    select(previous_cabinet_id, election_id, party_id, cabinet_party
+    ) %>%
+    filter(election_id %in% elections_pool) %>%
+    filter(!is.na(previous_cabinet_id))
+mask <- with(cabinets,
+    duplicated(paste(election_id, previous_cabinet_id, party_id))
+)
+cabinets[mask, ] # election_id == 293, party_id == 947
+# entries not in lsvergl data -> drop
+cabinets <- filter(cabinets, election_id != 293 & party_id != 947)
+with(cabinets,
+    any(duplicated(paste(election_id, previous_cabinet_id, party_id)))
+)  # now unique?
+tmp2 <- left_join(pecs, cabinets,
+    # keep all entries in pecs, add only matching entries from cabinets
+    by = c("election_id", "previous_cabinet_id", "party_id")
+)
+write.csv2(tmp2, file.path(path_project, "out", "pecs_wi_NA_cabParty.csv"))
 
-tmp2 <- left_join(pecs, tmp, by = c("previous_cabinet_id", "party_id"))
-for (i in pec_indicators) {
-    cat("Processing on:", i, "\n")
-    mask <- ifelse(tmp2[, i] == 1, TRUE, FALSE)
-    assign("tmp",
-        aggregate(cabinet_party ~ election_id, data = tmp2[mask, ],
-            FUN = print#function(x) all(x == 1, na.rm = TRUE)
-        )
-    )
-    aggregate(cabinet_party ~ election_id, data = tmp2[mask, ],
-            FUN = print#function(x) all(x == 1, na.rm = TRUE)
-        )
-    # cat("Result has shape", nrow(tmp), "entries.\n")
-    names(tmp)[2] <- paste(i, "incumbent2", sep = "_")
-    print(head(tmp))
-    tmp3 <- left_join(country_panel, tmp, by = "election_id")
-}
-aggregate(cabinet_party ~ election_id, data = tmp2[mask, ],
-            FUN = function(x) all(x == 1, na.rm = TRUE)
-        )
 
-write_csv2(tmp2, file.path(path_project, "out", "pecs_cabs"))
-dim(tmp2)
-table(cab_party = is.na(tmp2$cabinet_party), prev_cab = is.na(tmp2$previous_cabinet_id))
-
-
+tmp2 <- mutate(
+    tmp2, cabinet_party = ifelse(is.na(cabinet_party), -999, cabinet_party)
+)
 
 for (i in pec_indicators) {
     cat("Processing on:", i, "\n")
