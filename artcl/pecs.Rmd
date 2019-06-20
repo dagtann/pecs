@@ -281,9 +281,18 @@ Confidence intervals at the 90 and 95 percent levels have been added to each plo
     All models use panel-corrected standard errors clustered by country.
 }
 The left-most column replicates Tillman's original finding: Pre-electoral
-coalitions boost turnout (top) and this effect increases as more votes go to
-PECs (bottom). Each confidence interval excludes $0$, and therefore
-both estimates meet conventional standards of statistical significance. Things
+coalitions boost turnout (top) and this effect increases in their vote share
+(bottom). Each confidence interval excludes $0$, and therefore conventional
+standards of statistical significance are met. Things change markedly
+once non-stationarity is taken into account. On the one hand, the mobilizing
+potential of PEC entering elections is notably reduced and its confidence intervals consistently either include $0$ or exclude it by a narrow margin.
+
+ Things change markedly
+
+
+once
+
+ once
 turn immediately gloomy as we move towards the right. Note how the binary
 the binary indi
 
