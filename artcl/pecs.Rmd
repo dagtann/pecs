@@ -26,11 +26,11 @@ source("~/github/pecs/src/r/master.R")
 \doinumber{doi:10.1017/psrm.2016.XX}###
  -->
 
-\author{Steffen Ganghof, Sebastian Eppner, Dag Tanneberg}
+\author{Dag Tanneberg, Sebastian Eppner, Steffen Ganghof}
 \title{Bring out the Rest\newline What pre-electoral coalitions increase turnout in national elections?}
 \maketitle
 
-# Introduction
+\section{Introduction}
 
 What explains turnout in general elections with high numbers of competing parties?
 After all, as the number of political parties increases coalition cabinets become
@@ -53,13 +53,13 @@ between pre-electoral coalitions and imply that only coalitions which formulate
 a clear alternative to the incumbent government increase turnout in multiparty
 elections.
 
-# Why does multipartism decrease turnout?
+\section{Why does multipartism decrease turnout?}
 
-# What pre-electoral coalitions increase government identifiability?
+\section{What pre-electoral coalitions increase government identifiability?}
 
-# Results
+\section{Results}
 
-## Replication
+\subsection{Replication}
 
 \cite{Tillman.2015} marshals a standard fixed-effects panel design in order to
 study the effect of pre-electoral coalitions on turnout in general elections.
@@ -70,7 +70,8 @@ fixed-effects designs remove time-invariant unit-specific unobservables
 \cite[508]{Halaby.2004}, i.e. permanent properties not realized in the sample.
 Fixed-effect designs yield unbiased estimators of a hypothesized causal effect
 as long as the disturbances are mean-independent of the independent variable(s)
-across \textit{all} measurement occasions \cite[482]{Wooldridge.2009}. Despite their appeal, fixed-effects designs have recently come under attack [add
+across \textit{all} measurement occasions \cite[482]{Wooldridge.2009}. Despite
+their appeal, fixed-effects designs have recently come under attack [add
 references]. Based on a Monte-Carlo study \cite[26; our emphasis]{Pluemper.2018}
 advise scholars to distrust fixed-effects estimators whenever there is a reason
 to suspect "the presence of any dynamic misspecification or omitted time-varying
@@ -91,7 +92,7 @@ inspection to more complex diagnostics and detrending tools, this section
 demonstrates that a common trend in turnout and the formation of pre-electoral
 coalitions biases much even though not all of Tillman's original results.
 
-```{r, edaNonStationarity, fig.cap="Visual Inspection of Non-Stationarity"}
+```{r, edaNonStationarity, fig.cap="Visual Assessment of Stationarity"}
 rm(list = ls()[!(ls() %in% clean_workspace)])
 pdta <- filter(country_panel, in_tillman == 1) %>%
     select(iso3c, year, turnout, pec1, vote_pec) %>%
@@ -142,7 +143,8 @@ their mean and variance should fluctuate randomly. Figure
 The figure plots annual means (top row) and standard deviations (bottom row)
 for each of Tillman's pivotal variables.\footnote{
     The publication features a number of indicator variables which discretize
-    the electoral strength of pre-electoral coalitions. For example, one binary indicator takes the value of 1 whenever at least one pre-electoral
+    the electoral strength of pre-electoral coalitions. For example, one binary
+    indicator takes the value of 1 whenever at least one pre-electoral
     coalition received 20 percent or more of the national vote
     \cite[731]{Tillman}. As these binary indicators are functions of the
     overall electoral strength of pre-electoral coalitions, they must
@@ -157,17 +159,22 @@ the stationarity of the data.
         for years \cite{Hooghe.2017}. Starting at 88 percent in 1970, the
         annual mean in the top-left panel reaches an all-time low at 66 percent
         in the year 2000 and shows no strong sign of reversion until the end of
-        the observation period in 2011. Pre-electoral coalitions exhibit a more complex, though not  entirely unrelated trend. As shown in the middling panel of the top row, PECs become more prevalent until the mid-1980s. Later on, their attraction nosedives and continously declines -- in
+        the observation period in 2011. Pre-electoral coalitions exhibit a more
+        complex, though not entirely unrelated trend. As shown in the middling
+        panel of the top row, PECs become more prevalent until the mid-1980s.
+        Later on, their attraction nosedives and continously declines -- in
         tandem with turnout. Voting results for PECs, in contrasts, do not
         exhibit such clear patterns and influenced by some significant outliers.
     \item Turning to their second moment, evidence against stationarity of the
-        data is not not as clear-cut. On the one hand, the standard deviation of about the annual average in turnout has monotonically increased over
+        data is not not as clear-cut. On the one hand, the standard deviation of
+        about the annual average in turnout has monotonically increased over
         time. This observation clearly speaks to non-stationarity. On the other
         hand, the variances in the formation and showing of pre-electoral
         coalitions are prone to some notable outliers, which may skew the overall
         impression from the diagram.
     \item Finally, Figure \ref{fig:edaCommonTrend} in the Appendix
-        disaggregates trends in turnout and pre-electoral coalitions to the country-level. As can be seen from the individual panels, all
+        disaggregates trends in turnout and pre-electoral coalitions to the
+        country-level. As can be seen from the individual panels, all
         three indicators seem to change systematically over time. However,
         those developments do not always proceed in parallel and may
         occasionally be quite complex.
@@ -177,9 +184,10 @@ Visual assessments of statistical phenomena are often highly subjective and
 should be accompanied by more formal evidence. In the case of non-stationarity,
 tests for autocorrelation among the residuals constitute such option. Table
 \ref{tbl:TestsSerialCorrelation} reports several different autocorrelation
-diagnostics, which all evaluate Tillman's pivotal regression models \cite[733, Table 4; Models 2 and 4]{Tillman.2015}. The Durbin–Watson statistic detects
-first-order autocorrelation among the residuals. Its classical form does not
-account for panel-data and has therefore been generalized by
+diagnostics, which all evaluate Tillman's pivotal regression models
+\cite[733, Table 4; Models 2 and 4]{Tillman.2015}. The Durbin–Watson statistic
+detects first-order autocorrelation among the residuals. Its classical form does
+not account for panel-data and has therefore been generalized by
 \cite{Baltagi.1999}. If first-order autocorrelation (AR(1)) was not an issue,
 than either variant of the statistic should approach 2. This is clearly not the
 case. Rather, with values at about 1 either variant of the Durbin-Watson
@@ -242,67 +250,75 @@ pbgtest(fit_contested, order = 2)
         Wooldridge & $F_{(1, 220)} = 18.31$ & $F_{(1, 216)} = 17.96$ \\
         \bottomrule
     \end{tabular}
-    \caption{Tests for Serial Correlation in the Residuals}
+    \caption{Tests for Serial Correlation among the Residuals}
     \label{tbl:TestsSerialCorrelation}
 \end{table}
 
 
-What to do with non-stationary panel data? One solution is to somehow include
-the trend component explicitly into the regression model. The options are many.
-A two-way error components model is akin a unit-fixed-effects model that also
-includes time dummies. Both eliminate unobserved heterogeneity among the
-\textit{time points}. Alternatively, a time index component can be included as
-an independent variable to reduce any confounding due to trends in the data. A
-somewhat more stringent version of this approach interacts the time index with
-the unit-fixed effects and thereby estimates unit-specific trends. A second
-remedy against non-stationarity is to transform the data, e.g., by taking
-first-differences or by applying a Prais-Winston transformation\footnote{
+How to cope with non-stationary data in fixed-effects designs? One solution 
+explicitly includes a trend component into the analysis. There are several 
+options to do so. Firstly, a two-way error components model eliminates 
+unobserved  heterogeneity among the units \text{and} the time points 
+\cite[982]{Bruederl.2010}. It is akin to a unit-fixed-effects model that 
+includes also time dummies and constitutes a conventional choice in panel data 
+analysis. Secondly, a time index component can be included as an independent
+variable. The index variable reduces confounding due to trends in the data. A
+somewhat more flexible version of this approach interacts the time index with
+the unit-fixed effects to estimate unit-specific trends (growth curves). 
+Another solution to the problem of non-stationarity transforms the data by, 
+e.g., taking first-differences or applying a Prais-Winston 
+transformation\footnote{
     We did not get around to do the Prais-Winston regression yet.
 }.
-Finally, dynamic-panel models have been suggested as means to deal with
-serial correlation in panel data [REFERENCE]. In political science, the perhaps
-best known variant of this approach goes back to \cite{Beck.1995} and turns on
-a one-period lag of the dependent variable along with panel-corrected standard
+Finally, dynamic-panel models have been suggested as a fix for serial 
+correlation among the errors [REFERENCE]. The perhaps best known variant of 
+this approach goes back to \cite{Beck.1995}. It adds a one-period lag of 
+the dependent variable to the predictors and uses panel-corrected standard
 errors. Each of these attempted solutions approaches non-stationarity from a
 different angle, and, when taken together, they make for a rigorous assessment
 of the relationship between pre-electoral coalitions and turnout.
 
-Results for each\footnote{
+We present results for each of the previously described variations\footnote{
     Again, we didn't get around to do Prais-Winston, yet.
 }
-of the previously described variations on the fixed-effects scheme are shown in
-Figure \ref{fig:reportDetrendedResults}. In the top-row it plots the marginal
-effect of PEC formation on turnout. In the bottom row it shows the same
-information for the total vote share of PECs.\footnote{
+on the fixed-effects scheme in Figure \ref{fig:reportDetrendedResults}. The top
+row plots the marginal effect of PEC formation on turnout, while the bottom
+row shows the marginal effect of the total vote share going to PECs.\footnote{
     Following the original publication, turnout and Vote PEC are measured in
     percent.
 }
-Confidence intervals at the 90 and 95 percent levels have been added to each plot.\footnote{
+Confidence intervals at the 90 and 95 percent levels have been added to each 
+panel.\footnote{
     All models use panel-corrected standard errors clustered by country.
 }
-The left-most column replicates Tillman's original finding: Pre-electoral
-coalitions boost turnout (top) and this effect increases in their vote share
-(bottom). Each confidence interval excludes $0$, and therefore conventional
-standards of statistical significance are met. Things change markedly
-once non-stationarity is taken into account. On the one hand, the mobilizing
-potential of PEC entering elections is notably reduced and its confidence intervals consistently either include $0$ or exclude it by a narrow margin.
+The left-most column replicates Tillman's original analysis which does not 
+account for non-stationarity. It implies that pre-electoral coalitions boost 
+turnout (top) and that this effect increases with their vote share (bottom). 
+Both confidence intervals securely exclude $0$, meeting conventional standards 
+of  statistical significance. Things change markedly once non-stationarity is
+taken into account. Going from left to right in the top row, the mobilizing
+potential of PEC entering elections is (a) notably reduced in magnitude, and
+(b) almost consistently indistinguishable from $0$. The dynamic model
+consitutes the sole exception to this rule, but it should not receive too much
+emphasis. After all, even this modeling approach matches the more general
+pattern, it primarily addresses serial correlation among the errors, and its
+confidence intervals just barly exclude $0$. Turning to the bottom rule, 
+the evidence is slightly more mixed. In all but two instances stronger 
+electoral showings of PECs continue to coincide with higher turnout even after 
+non-stationarity has been taken into account. Effect sizes may decline by up to 
+50 percent, but estimates still achieve statistical significance at 
+conventional levels. It is noteworthy, though, that the unit-specific trend and 
+the first difference formulation render the electoral strength of PECs 
+statistically indistinguishable from $0$. These models apply the most 
+stringent fixes of non-stationarity, and they clearly reduce first order 
+autcorrelation among the correlation among the errors (see 
+\ref{tbl:ReplicationResults}). In short, once non-stationarity is taken into 
+account scant evidence supports the mobilizing effect of PEC formation, but 
+the data hint to a continued association between their electoral strength and 
+turnout.
 
- Things change markedly
-
-
-once
-
- once
-turn immediately gloomy as we move towards the right. Note how the binary
-the binary indi
-
-
-
-
-
-
-
-```{r, reportDetrendedResults, fig.cap="Detrended Effect Estimates"}
+```{r, reportDetrendedResults, fig.cap="Estimated Effect of PECs on Turnout"}
+# Initialize
 rm(list = ls()[!(ls() %in% clean_workspace)])
 packages <- c("plm", "sandwich", "lmtest", "texreg")
 for(i in packages){
@@ -423,7 +439,7 @@ ggplot(data = pdta, aes(x = trend_label, y = beta)) +
     geom_linerange(aes(ymin = lower95, ymax = upper95)) +
     geom_linerange(aes(ymin = lower90, ymax = upper90), size=1.1) +
     geom_point(size = 2, shape = 21, fill = "white") +
-    labs(x = "Correction for Non-Stationarity", y = expression(hat(beta)),
+    labs(x = "Correction for Non-Stationarity", y = "Effect Estimate",
         caption = "Note: CIs at 90 and 95 percent."
     ) +
     facet_grid(treatment_label ~ ., scales = "free") +
@@ -448,7 +464,6 @@ ses <- ses[names(fitted_models)]
 pvals <- lapply(names(fitted_models),
     function(x) coeftest(fitted_models[[x]], vcov = ses[[x]])[, 4]
 )
-names(pvals)
 names(pvals) <- names(fitted_models)
 texreg(
     fitted_models,
@@ -457,17 +472,19 @@ texreg(
     omit.coef = "(t:)",
     override.se = lapply(ses, function(x){sqrt(diag(x))}),
     override.p = pvals,
-    custom.coef.names = c("PEC contested", "Parties", "Disproportionality", "PR",
-        "Plurality", "Closeness", "Economic Growth", "log(income)",
+    custom.coef.names = c("PEC contested", "Parties", "Disproportionality", 
+        "PR", "Plurality", "Closeness", "Economic Growth", "log(Income)",
         "Disproportionality $\\times$ PR",  "Plurality $\\times$ Closeness",
-        "Vote PEC", "Constant", "$t$", "Turnout$_{t-1}$"
+        "Vote PEC", "$t$", "Constant", "Turnout$_{t-1}$"
     ),
-    reorder.coef = c(1, 11, 2:10, 13, 14, 12),
+    reorder.coef = c(1, 11, 2:10, 12, 14, 13),
     booktabs = TRUE, sideways = TRUE,
     stars = c(0.001,  0.01, 0.05, 0.1),
     caption = "Replication Results",
     label = "tbl:ReplicationResults",
-    custom.note = "Panel corrected SEs in parantheses \\cite{Beck.1995}, clustered by country. %stars."
+    custom.note = paste0("Panel corrected SEs in parantheses ",
+        "\\cite{Beck.1995}, clustered by country. %stars."
+    )
 )
 # Manual edits to BTON
 tmp <- readLines(file.path(path_project, "artcl", "detrended_models.tex"))
@@ -476,9 +493,9 @@ tmp <- tmp[!grepl("\\usepackage", tmp)]  # drop usepackage entries
 tmp[grepl("[a-z]\\_[a-z]", tmp)] <- paste(
     "Detrending Technique", "\\multicolumn{2}{c}{None}",
     "\\multicolumn{2}{c}{2way EC}",
-    "\\multicolumn{2}{c}{FD}",
     "\\multicolumn{2}{c}{Common Trend}",
     "\\multicolumn{2}{c}{Unit-specific Trend}",
+    "\\multicolumn{2}{c}{FD}",
     "\\multicolumn{2}{c}{LDV} \\\\",
     sep = " & "
 )  # replace table header
@@ -503,11 +520,37 @@ for (p in packages) detach(paste("package", p, sep = ":"), character.only = TRUE
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
 
-## Exploratory Analysis: Which Pre-electoral Coalitions matter?
+\subsection{Exploratory Analysis: What Pre-electoral Coalitions matter?}
 
-```{r, edaRelFreqVariantsPEC}
+The previous section has shown the praise for pre-electoral coalitions
+exaggerated, though not entirely unfounded. Participation in elections does not
+increase when PECs enter the race, but their strong showing is consistently 
+associated with higher levels of turnout. Notwithstanding, this seemingly robust
+association remains theoretically shallow. If PECs provide information on
+credible coalition governments and thereby incentivize turnout, then we should 
+focus on the message itself, not its ultimate effect. Consequently, the
+following section explores what factors drive the seemingly robust association
+between turnout and the electoral success of PECs. To that end it exploits new
+data on PEC properties such as their type, manifest, and incumbency status.
+
+Following \cite{Golder.2006}, we regard as pre-electoral coalition any group of 
+parties that publicly and mutually announces its intention to form or continue
+a coalition government prior to election night. Any such statement shrinks the
+set of government alternatives and thereby structures post-election coalition 
+bargaining. Notwithstanding, pre-electoral coalitions differ in their degree of 
+commitment. Some PECs merely announce their intention to cooperate come election
+dawn, whereas others provide voters with detailed voting instructions, 
+formulate joint programs or field common candidates. We presume that such
+differences between pre-electoral coalitions matter because they reflect
+different levels of sincerity.
+
+In order to gauge the veracity of our presumption we explore we exploit new data
+on `r sprintf("%.0f", sum(country_panel$nupec_neu, na.rm=TRUE))` pre-electoral coalitions. Moreover, covering
+`r sprintf("%.0f", length(unique(country_panel$election_id[!is.na(country_panel$in_lsvergl)])))` elections held between $1945$ and $2015$ in `r sprintf("%.0f", length(unique(country_panel$iso3c[!is.na(country_panel$in_lsvergl)])))` non-presidential democracies our data
+provide the most complete survey of pre-electoral coalitions yet. Table \ref{tbl:summaryPecs} summarizes our data.
+
+```{r, edaRelFreqVariantsPEC, fig.cap="Election Level Distribution of PEC Properties"}
 rm(list = ls()[!(ls() %in% clean_workspace)])
-alpha <- .05
 pdta <- subset(country_panel,
     subset = (in_tillman == 1),
     select = c("iso3c", "election_id",
@@ -515,46 +558,36 @@ pdta <- subset(country_panel,
     )
 )
 pdta <- gather(pdta, "key", "value", grep("any_", names(pdta)))
-mu <- aggregate(value ~ key, data = pdta, FUN = mean, na.rm = TRUE)
-names(mu) <- c("key", "mu")
-sigma <- aggregate(value ~ key, data = pdta, FUN = function(x) {
-    if(length(unique(x)) == 2) {
-        mu <- mean(x, na.rm = TRUE)
-        n <- sum(!is.na(x))
-        sqrt(mu * (1 - mu) / n)
-    } else sd(x)
-    }
-)
-names(sigma) <- c("key", "sigma")
-pdta <- inner_join(mu, sigma, by = "key")
+pdta <- aggregate(value ~ key, data = pdta, FUN = mean, na.rm = TRUE)
 pdta <- mutate(pdta,
-    lower95 = mu - qnorm(alpha / 2, lower = FALSE) * sigma,
-    upper95 = mu + qnorm(alpha / 2, lower = FALSE) * sigma,
     shape_label = factor(
-        ifelse(as.character(key) %in% paste0("any_type", seq(7) - 1),
+        ifelse(as.character(key) %in% paste0("any_type", seq(6)),
             "PEC Type", "Other"
         ),
         levels = c("PEC Type", "Other")
     ),
     key_label = factor(key,
-        levels = c(paste0("any_type", seq(7) - 1), "any_prog", "any_incumbent"),
-        labels = c("Don't know", "Nomination\nAgreement", "Joint list",
+        levels = c(paste0("any_type", seq(6)), "any_prog", "any_incumbent"),
+        labels = c("Nomination\nAgreement", "Joint list",
             "Dual-Ballot\nInstructions", "Vote Transfer\nInstructions",
             "Public commitment\nto govern together", "Other", "Joint Program",
             "Incumbent Coalition\nGovernment"
         )
     )
 )
-ggplot(
-    data = pdta, aes(x = key_label, y = mu, ymin = lower95, ymax = upper95, shape = shape_label)
-) +
-    geom_linerange() + geom_point(fill = "white") + scale_shape_manual(values = c(21, 23)) +
-    labs(
-        y = "Relative Frequency", shape = "",
-        caption = "Note: CIs at 95 percent added."
+ggplot(data = pdta, aes(x = key_label, y = value, fill = shape_label)) +
+    geom_bar(stat = "identity") +
+    labs(y = "Relative Frequency", caption=paste("Reading instruction:",
+            "In about 10 percent of all elections in the dataset at least one",
+            "PEC formed a nomination agreement."
+        )
     ) +
+    scale_fill_brewer(type = "qual") +
     ggthemes::theme_fivethirtyeight() +
-    theme(axis.title = element_text(), axis.title.x = element_blank())
+    theme(
+        axis.title = element_text(), axis.title.x = element_blank(),
+        legend.title = element_blank()
+    )
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
 
@@ -674,43 +707,31 @@ rm(list = ls()[!(ls() %in% clean_workspace)])
 
 ## Country-level trends
 
-```{r, edaCommonTrend, fig.cap="Secular Trends in the Data", fig.lp="fig:"}
+```{r, edaCommonTrend, fig.cap="Country-Specific Trends in the Data"}
 rm(list = ls()[!(ls() %in% clean_workspace)])
-
 max_degree = 3
-raw_scores <- select(tillman, country, year, turnout_wi, pec1_wi, vote_pec_wi)
-
-sigma_wi <- group_by(raw_scores, country) %>%
-    summarise_at(.vars = vars(turnout_wi, pec1_wi, vote_pec_wi),
-        .funs = list(sigma = sd)
+pdta <- select(tillman, country, year, turnout, pec1, vote_pec) %>%
+    group_by(country) %>%
+    mutate_at(vars(turnout, pec1, vote_pec), scale) %>%
+    ungroup() %>%
+    mutate(country = ifelse(country == "NewZealand", "New Zealand", country)) %>%
+    gather("key", "value", turnout, pec1, vote_pec) %>%
+    mutate(key = factor(as.character(key),
+            levels = c("turnout", "pec1", "vote_pec"),
+            labels = c("Turnout", "PEC contested", "PEC result")
+        )
     )
-z_scores <- left_join(raw_scores, sigma_wi, by = "country") %>%
-    mutate(turnout_wi_z = turnout_wi / turnout_wi_sigma) %>%
-    mutate(pec1_wi_z = pec1_wi / pec1_wi_sigma) %>%
-    mutate(vote_pec_wi_z = vote_pec_wi / vote_pec_wi_sigma)
-z_scores <- z_scores[, !grepl("[_wi, _sigma]$", names(z_scores), perl = TRUE)] # drop sigmas
-z_scores_all <- apply(raw_scores[, -(1:2)], 2, scale)
-colnames(z_scores_all) <- paste(colnames(z_scores_all), "z", sep="_")
-z_scores_all <- cbind.data.frame(raw_scores[, 1:2], z_scores_all)
-z_scores_all <- z_scores_all %>% mutate(country = "All")
-pdta <- rbind.data.frame(z_scores, z_scores_all)
-
-## Plot all trends
-ggplot(data = pdta, aes(x = year)) +
-    geom_smooth(aes(y = turnout_wi_z, linetype = "Turnout"),
-        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
-    ) +
-    geom_smooth(aes(y = pec1_wi_z, linetype = "Pre-Electoral Coalition Entry"),
-        method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
-    ) +
-    geom_smooth(aes(y = vote_pec_wi_z, linetype = "Pre-Electoral Coalition Result"),
+ggplot(data = pdta, aes(x = year, y = value, linetype = key)) +
+    geom_smooth(
         method = "lm", formula = y ~ poly(x, max_degree), se = FALSE, colour = "black", size = .7
     ) +
     geom_rug(sides = "b") +
-    scale_linetype_manual(values = rev(seq(3))) +
-    facet_wrap(vars(country)) +
-    labs(y = "Z-Standardized Within-Differences", linetype = "Cubic Polynomial for Trend in") +
     ggthemes::theme_fivethirtyeight(base_size = base_size * .75) +
+    facet_wrap(~ country) +
+    labs(
+        y = "Scaled Within-Differences", linetype = "",
+        caption = "Note: Figures scaled by within-country std. dev. Cubic polynomials shown. Rugs indicate elections."
+    ) +
     theme(
         axis.title = element_text(),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
@@ -719,7 +740,7 @@ ggplot(data = pdta, aes(x = year)) +
     )
 ```
 
-## Replication BTON
+## Detailed Replications Results
 
 \include{detrended_models}
 
@@ -821,7 +842,9 @@ pdta <- gather(pdta, "key", "value", nupec_neu, election_id, pec)
 pdta <- within(pdta,
     key_labels <- factor(as.character(key),
         levels = c("nupec_neu", "election_id", "pec"),
-        labels = c("No. of PECs", "No. of elections", "Share elections with PECs")
+        labels = c("No. of PECs", "No. of elections",
+            "Share elections with PECs"
+        )
     )
 )
 

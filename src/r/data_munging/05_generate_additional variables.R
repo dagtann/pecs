@@ -7,8 +7,6 @@ if (!all(packs %in% installed.packages())) {
     rm(mask)
 }
 for (p in packs) library(p, character.only = TRUE)
-rm(p)
-
 
 # data objects
 pecs <- read_dta(
@@ -41,8 +39,8 @@ country_panel[, "largepec_neu"] <- apply(
     country_panel[, pec_shares], 1, function(r) any(r >= .4, na.rm = TRUE)
 )
 # Sanity checks: Are there gross deviations?
-# with(country_panel, table(smallpec, smallpec_neu))
-# with(country_panel, table(largepec, largepec_neu))
+with(country_panel, table(smallpec, smallpec_neu))
+with(country_panel, table(largepec, largepec_neu))
 
 
 # create by election pec type indicators
@@ -52,11 +50,11 @@ tmp <- aggregate(
     FUN = function(x) ifelse(all(is.na(x)), 0, max(x, na.rm = TRUE))
 )
 type_lookup <- sort(unique(unlist(tmp[, -1])))
+type_lookup <- type_lookup[-which.min(type_lookup)]
 tmp <- gather(tmp, "pec", "type", 2:ncol(tmp))
 res <- outer(tmp[["type"]], type_lookup, "==")
 res <- as.data.frame(cbind(res, tmp[["election_id"]]))
 colnames(res) <- c(paste0("any_type", type_lookup), "election_id")
-res <- na.omit(res)  # either all or no NA, all NA = not covered by pecs
 res <- within(res, count <- ave(seq(1, nrow(res)), election_id, FUN = seq_along))
 res <- subset(res, count == 1)
 res <- res[, -ncol(res)]
@@ -66,10 +64,12 @@ country_panel <- left_join(country_panel, res, by = "election_id")
 # create by election incumb & program indicators
 to_aggregate <- paste(
     pec_indicators,
-    rep(c("prog", "incumbent"), each = length(pec_indicators)), sep = "_")
+    rep(c("prog", "incumbent"), each = length(pec_indicators)), sep = "_"
+)
 tmp <- aggregate(
     pecs[, to_aggregate], list("election_id" = pecs$election_id),
-    FUN = function(x) ifelse(all(is.na(x)), 0, max(x, na.rm = TRUE)))
+    FUN = function(x) ifelse(all(is.na(x)), 0, max(x, na.rm = TRUE))
+)
 res <- vapply(
     c("prog", "incumbent"),
     FUN = function(suffix) {
@@ -82,7 +82,6 @@ res <- vapply(
 res <- as.data.frame(cbind(res, tmp[["election_id"]]))
 colnames(res) <- c(paste("any", c("prog", "incumbent"), sep = "_"), "election_id")
 country_panel <- left_join(country_panel, res, by = "election_id")
-
 
 
 if (FALSE) {  # Commented b/c massive problems on join
@@ -146,3 +145,6 @@ nrow(tmp)
 table(is.na(tmp$cabinet_party))
 tmp[is.na(tmp$cabinet_party), c("country_name_short", "election_date", "party_name_short")]
 }
+
+for (p in packs) detach(paste("package", p, sep = ":"), character.only = TRUE)
+rm(list = ls()[!(ls() %in% clean_workspace)])
