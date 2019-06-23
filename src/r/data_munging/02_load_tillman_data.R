@@ -38,7 +38,8 @@ tillman <- select(tillman,
         (iso3c == "GRC" & disprop > 4 & year == 1989),
         year2 + 1, year2)
     ) %>%
-    mutate(in_tillman = TRUE)
+    mutate(in_tillman = ifelse(iso3c %in% c("LUX", "CAN"), 0, 1))
+    # CAN & LUX in data, but dropped from published analysis
 
 
 # Apply fixed effects transformation

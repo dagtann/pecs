@@ -55,11 +55,12 @@ tmp <- gather(tmp, "pec", "type", 2:ncol(tmp))
 res <- outer(tmp[["type"]], type_lookup, "==")
 res <- as.data.frame(cbind(res, tmp[["election_id"]]))
 colnames(res) <- c(paste0("any_type", type_lookup), "election_id")
-res <- within(res, count <- ave(seq(1, nrow(res)), election_id, FUN = seq_along))
-res <- subset(res, count == 1)
-res <- res[, -ncol(res)]
+res <- aggregate(
+    res[, paste0("any_type", type_lookup)],
+    list(election_id = res$election_id),
+    FUN = max
+)
 country_panel <- left_join(country_panel, res, by = "election_id")
-
 
 # create by election incumb & program indicators
 to_aggregate <- paste(
