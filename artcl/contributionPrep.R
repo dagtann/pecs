@@ -61,13 +61,3 @@ fit_interProg <- plm(
     data = data_to_fit, effect = "twoways", model = "within"
 )
 screenreg(list(fit_baseline, fit_type, fit_prog, fit_incumbent, fit_interInc, fit_interProg))
-
-
-
-ggplot(data = as.data.frame(data_to_fit), aes(x = factor(any_type346), y = turnout)) +
-    geom_boxplot()
-ggplot(data = as.data.frame(data_to_fit),
-    aes(x = turnout, colour = factor(any_type346))
-) +
-    geom_density() + geom_rug()
-
