@@ -1,0 +1,214 @@
+---
+output:
+  beamer_presentation:
+    includes:
+      in_header: universal_header.tex
+    theme: "Berlin"
+    fonttheme: "professionalfonts"
+    colortheme: "seagull"
+    toc: false
+---
+
+```{r, optionsChunk, include = FALSE}
+knitr::opts_chunk$set(
+    cache = FALSE, eval = TRUE, echo = FALSE, fig.align = "center",
+    fig.width = 4, fig.height = 2.5, warning = FALSE, message = FALSE,
+    fig.lp="fig:", fig.pos="t"
+)
+source("~/github/pecs/src/r/master.R")
+```
+
+\title{Pre-Electoral Coalitions Revisited}
+\subtitle{What Pre-Electoral Coalitions Boost Turnout?}
+
+\maketitle
+
+# Inhalt
+
+1. Forschungsfrage
+1. Ergebnisse der Replikation
+1. Ergebnisse der Exploration
+1. Waschliste möglicher Erweiterungen
+
+
+# Forschungsfrage
+
+
+
+# Ergebnisse der Replikation
+
+```{r, edaNonStationarity}
+rm(list = ls()[!(ls() %in% clean_workspace)])
+pdta <- filter(country_panel, in_tillman == 1) %>%
+    select(iso3c, year, turnout, pec1, vote_pec) %>%
+    mutate(turnout = turnout / 100, vote_pec = vote_pec / 100)
+tmp <- aggregate(
+    pdta[, c("turnout", "pec1", "vote_pec")],
+    list(year = pdta[["year"]]),
+    FUN = mean, na.rm = TRUE
+)
+tmp[, "statistic"] <- "mu"
+tmp2 <- aggregate(
+    pdta[, c("turnout", "pec1", "vote_pec")],
+    list(year = pdta[["year"]]),
+    FUN = sd, na.rm = TRUE
+)
+tmp2[, "statistic"] <- "sigma"
+pdta <- bind_rows(tmp, tmp2) %>%
+    gather("key", "value", turnout, pec1, vote_pec) %>%
+    mutate(
+        key_labels = factor(
+            key, levels = c("turnout", "pec1", "vote_pec"),
+            labels = c("Turnout", "PEC contested", "Vote PEC")
+        ),
+        statistic_labels = factor(statistic, levels = c("mu", "sigma"),
+                labels = c("Mean", "Std. Dev.")
+            )
+    )
+ggplot(data = pdta, aes(x = year, y = value)) +
+    geom_point(shape = 21, fill = "white", size = 1) +
+    geom_smooth(method = "lm", se = FALSE, formula = y ~ poly(x, 3), colour = "black", size = .7) +
+    facet_grid(statistic_labels ~ key_labels) +
+    ggthemes::theme_fivethirtyeight(base_size = 10) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+rm(list = ls()[!(ls() %in% clean_workspace)])
+```
+
+# Ergebnisse der Replikation
+
+```{r, reportDetrendedResults}
+# Initialize
+rm(list = ls()[!(ls() %in% clean_workspace)])
+packages <- c("plm", "sandwich", "lmtest", "texreg")
+for(i in packages){
+    if(!(i %in% rownames(installed.packages()))) {
+        cat("Now installing required package:\t", i)
+        install.packages(i, dependencies = TRUE)
+    }
+    library(i, character.only = TRUE)
+}
+
+
+# Declare Functions
+extract_results <- function (model, of.interest = NULL, pcse = "group") {
+    out <- cbind(beta = coef(model), se = sqrt(diag(vcov(model))))
+    if(!is.null(pcse)) {
+        out[, "se"] <- sqrt(diag(plm::vcovBK(model, cluster = pcse)))
+    }
+    if (!is.null(of.interest)) {
+        out <- out[grep(of.interest, rownames(out), perl=TRUE), ]
+    }
+    return(out)
+}
+
+
+# Declare string constants
+panel_id <- c("country", "year2")
+control <- paste(
+    c("enep", "disprop * pr", "plurality * closeness", "growth", "lnincome"),
+    collapse = " + "
+)
+treatments <- c("PEC cont." = "pec1", "Vote PEC" = "vote_pec")
+response <- "turnout"
+trends <- c("None"="None", "Two-way Error\nComponent"="twoways",
+    "Common\nTrend"="t", "Unit-specific\nTrend"="t*iso3c",
+    "First\nDifference"="fd", "Lagged DV"="turnout_l1"
+)
+
+
+# Prepare data
+data_to_fit <- filter(country_panel, (in_tillman == 1) &
+    !(iso3c %in% c("LUX", "CAN"))
+) %>%
+    group_by(iso3c) %>%
+    mutate(turnout_l1 = dplyr::lag(turnout, n = 1, order_by = year2)) %>%
+    ungroup()
+data_to_fit <- pdata.frame(data_to_fit, index = c("iso3c", "year2"))
+
+
+# Fit models
+fitted_models <- list()
+for (trend in trends){
+    for(treatment in treatments) {
+        assign(
+            "frm",
+            paste0(response, " ~ ", paste(treatment, control, trend, sep=" + "))
+        )
+        if (trend == "None") {
+            assign(
+                "frm",
+                paste0(response, " ~ ", paste(treatment, control, sep=" + "))
+            )
+        }
+        if (trend == c("twoways")) {
+            assign(
+                "frm",
+                paste0(response, " ~ ", paste(treatment, control, sep=" + "))
+            )
+            fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
+                as.formula(frm), effect="twoways", model="within", data=data_to_fit
+            )
+            next
+        }
+        if (trend == c("fd")) {
+            assign(
+                "frm",
+                paste0(response, " ~ ", paste(treatment, control, sep = " + "))
+            )
+            fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
+                as.formula(frm), effect="individual", model="fd", data=data_to_fit
+            )
+            next
+        }
+        fitted_models[[paste(trend, treatment, sep = "_")]] <- plm(
+            as.formula(frm), model = "within", data = data_to_fit
+        )
+    }
+}
+
+
+# Generate coefficient plot
+to_plot <- vapply(fitted_models[c(1:8, 11:12)],
+    FUN=extract_results, FUN.VALUE=numeric(2), of.interest="pec"
+)
+to_plot <- cbind(
+    to_plot, vapply(fitted_models[c("fd_pec1", "fd_vote_pec")],
+    FUN = function(model){
+        out <- cbind(beta = coef(model), se = sqrt(diag(vcov(model))))
+        out <- out[grep("pec", rownames(out), perl=TRUE), ]
+        return(out)
+    },
+    FUN.VALUE = numeric(2)
+    )
+)
+to_plot <- t(to_plot)
+treatment_locations <- str_locate(rownames(to_plot), "vote_pec$|pec1$")
+treatment_labels <- str_sub(rownames(to_plot), treatment_locations)
+treatment_labels <- factor(treatment_labels, treatments, names(treatments))
+trend_labels <- str_split_fixed(rownames(to_plot), "vote_pec|pec1", 2)[, 1]
+trend_labels <- str_sub(trend_labels, 1, str_locate(trend_labels, "_$")[, 1]-1)
+trend_labels <- factor(trend_labels, trends, names(trends))
+z <- qnorm(c(.1, .05) / 2, lower = FALSE)
+pdta <- tibble(beta=to_plot[, "beta"], se=to_plot[, "se"],
+    trend_label=trend_labels, treatment_label=treatment_labels
+) %>%
+    mutate(lower90 = beta - z[1] * se, upper90 = beta + z[1] * se) %>%
+    mutate(lower95 = beta - z[2] * se, upper95 = beta + z[2] * se)
+ggplot(data = pdta, aes(x = trend_label, y = beta)) +
+    geom_linerange(aes(ymin = lower95, ymax = upper95)) +
+    geom_linerange(aes(ymin = lower90, ymax = upper90), colour = "white", size = .71) +
+    geom_point(size = 1, shape = 21, fill = "white") +
+    labs(y = "Effect Estimate") +
+    facet_grid(treatment_label ~ ., scales = "free") +
+    ggthemes::theme_fivethirtyeight(base_size = 10) +
+    theme(axis.title = element_text(), axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 6))
+
+
+# Housekeeping
+for (p in packages) detach(paste0("package:", p), character.only = TRUE)
+```
+
+# Ergebnisse der Exploration
+
+# Waschliste
