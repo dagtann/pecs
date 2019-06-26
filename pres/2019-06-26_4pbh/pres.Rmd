@@ -16,6 +16,8 @@ knitr::opts_chunk$set(
     fig.lp="fig:", fig.pos="t"
 )
 source("~/github/pecs/src/r/master.R")
+clean_workspace <- c(clean_workspace, "colors")
+colors <- c("90" ="#fee0d2", "95" = "#de2d26")
 ```
 
 \title{Pre-Electoral Coalitions Revisited}
@@ -26,13 +28,37 @@ source("~/github/pecs/src/r/master.R")
 # Inhalt
 
 1. Forschungsfrage
-1. Ergebnisse der Replikation
-1. Ergebnisse der Exploration
-1. Waschliste möglicher Erweiterungen
+2. Ergebnisse der Replikation
+3. Ergebnisse der Exploration
+4. Zusammenfassung
 
 
 # Forschungsfrage
 
+\begin{center}
+    \textbf{Motivation}: Institutionelle Einflussgrößen auf die Wahlbeteiligung
+\end{center}
+
+\resizebox{\linewidth}{!}{
+\begin{tabular}{lcl}
+    \toprule
+    Proportionalität des Wahlsystems & $\Leftrightarrow$ & Anzahl von Parteien \\
+    \midrule
+    Vielfalt politischen Angebots $\uparrow$ & ~ & Identifizierbarkeit von Koalitionen $\downarrow$\\
+    Wahlbeteiligung $\uparrow$ & ~ & Wahlbeteiligung $\downarrow$ \\
+    \bottomrule
+\end{tabular}
+}
+
+\begin{itemize}
+    \item [] \textit{Vorwahlkoalitionen}
+    \item erhöhen die Identifizierbarkeit späterer Koalitionsregierung,
+    \item steigern die Wahlbeteiligung um ca. 1,5 \% (Tillman 2015).
+\end{itemize}
+
+\begin{center}
+    \textbf{Forschungsfrage}: What pre-electoral coalitions turn out the vote?
+\end{center}
 
 
 # Ergebnisse der Replikation
@@ -70,7 +96,8 @@ ggplot(data = pdta, aes(x = year, y = value)) +
     geom_smooth(method = "lm", se = FALSE, formula = y ~ poly(x, 3), colour = "black", size = .7) +
     facet_grid(statistic_labels ~ key_labels) +
     ggthemes::theme_fivethirtyeight(base_size = 10) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.margin = grid::unit(c(1, 1, 0, 1), "lines"))
 rm(list = ls()[!(ls() %in% clean_workspace)])
 ```
 
@@ -202,7 +229,8 @@ ggplot(data = pdta, aes(x = trend_label, y = beta)) +
     facet_grid(treatment_label ~ ., scales = "free") +
     ggthemes::theme_fivethirtyeight(base_size = 10) +
     theme(axis.title = element_text(), axis.title.x = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 6))
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+        plot.margin = grid::unit(c(1, 1, 0, 1), "lines"))
 
 
 # Housekeeping
@@ -211,4 +239,313 @@ for (p in packages) detach(paste0("package:", p), character.only = TRUE)
 
 # Ergebnisse der Exploration
 
-# Waschliste
+\resizebox{\linewidth}{!}{
+\begin{tabular}{rccccccc}
+  \toprule
+  \multicolumn{2}{c}{} & \multicolumn{6}{c}{By Type} \\
+  \cmidrule{3-8}
+  ~ & Total & Public & Joint & Nomination & Dual-Ballot & Vote Transfer\\
+  \multicolumn{1}{l}{Any PEC} & Elections & Commitment & List & Agreement & Instructions & Instructions & Other\\
+  \midrule
+  observed?           & 157 & 63 & 36 & 46 & 0 & 11 & 9\\
+  incumbent?          &  46 & 31 & 21 &  3 & 0 &  6 & 1\\
+  joint program?      &  64 & 32 & 14 & 32 & 0 &  1 & 3\\
+  \bottomrule
+  \multicolumn{8}{l}{\textit{Note}: Elections may be double-counted.}
+\end{tabular}
+}
+
+# Ergebnisse der Exploration
+
+```{r, boxplotTurnoutAndOurPecsInTillman}
+rm(list = ls()[!(ls() %in% clean_workspace)])
+# data objects
+type_lookup <- c("No PEC" = 0, "Nomination agreement" = 1, "Joint list" = 2,
+    "Dual-ballot Instructions" = 3, "Vote transfer Instructions" = 4,
+    "Public commitment" = 5, "Other" = 6
+)
+pdta <- filter(country_panel, in_tillman == 1)
+pdta[, "turnout_2way"] <- resid(
+    lm(turnout ~ factor(iso3c) + factor(year2), data = pdta)
+)
+pdta <- pdta %>%
+    mutate(any_type0 = pec_neu == 0) %>%
+    select(c("election_id", "turnout_2way", paste0("any_type", 0:6), "any_prog", "any_incumbent")) %>%
+    gather("key", "value", turnout_2way) %>%
+    select(-key) %>%
+    rename(turnout_2way = value) %>%
+    gather("any_type", "value", any_type0:any_type6) %>%
+    mutate(any_type_label = NA)
+for (i in seq(type_lookup)) { # store full type label for each i in type_lookup
+    mask <- which(
+        pdta[["any_type"]] == paste0("any_type", type_lookup[i]) &
+        pdta[["value"]] == 1
+    )
+    pdta[mask, "any_type_label"] <- names(type_lookup)[i]
+}
+pdta <- na.omit(pdta)  # Drop NA entries in any_type_label -> gather() artifacts
+# Create data frame for each row in the final plot.
+pdta_incumb <- rename(pdta, status = any_incumbent) %>%
+    mutate(key_label = "Any incumbent?") %>%
+    select(-any_prog)
+pdta_prog <- rename(pdta, status = any_prog) %>%
+    mutate(key_label = "Any joint program?") %>%
+    select(-any_incumbent)
+pdta <- mutate(pdta, status = 0, key_label = "Marginal") %>%
+    select(-any_prog, -any_incumbent)
+pdta <- rbind.data.frame(pdta, pdta_incumb, pdta_prog)  # Stack DFs for plot.
+pdta <- mutate(pdta,  # Prettify plot labels
+    any_type_label = factor(any_type_label, levels = c(
+        "Public commitment", "Nomination agreement", "Joint list",
+        "Dual-ballot Instructions", "Vote transfer Instructions", "Other",
+        "No PEC"),
+        labels = c("Public\nCommitment", "Nomination\nAgreement", "Joint\nList",
+            "Dual-ballot\nInstructions", "Vote Transfer\nInstructions",
+            "Other", "No PEC")
+    ),
+    key_label = factor(as.character(key_label),
+        levels = c("Marginal", "Any incumbent?", "Any joint program?"),
+        labels = c("Marginal", "Any\nincumbent?", "Any joint\nprogram?")),
+    status_label = factor(status, levels = 0:1, labels = c("No", "Yes"))
+)
+ggplot(data = pdta, aes(x = any_type_label, y = turnout_2way,
+    fill = status_label)
+) +
+    geom_boxplot(outlier.fill = "white", size = .3, outlier.shape = 21,  outlier.size = 1) +
+    scale_x_discrete(drop=FALSE) +
+    scale_fill_brewer(type = "seq", palette = 6) +
+    labs(y = "Turnout 2way FE Residual") +
+    facet_grid(key_label ~ .) +
+    ggthemes::theme_fivethirtyeight(base_size = 10) +
+    theme(
+        axis.title = element_text(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+        legend.title = element_blank(),
+        legend.position = c(.12, 1.05),
+        legend.background = element_rect(fill = "transparent"),
+        legend.key.size = grid::unit(1, "lines"),
+        strip.text.y = element_text(size = 5),
+        plot.margin = grid::unit(c(1, 1, 0, 1), "lines")
+    )
+# housekeeping
+rm(list = ls()[!ls() %in% clean_workspace])
+```
+
+# Ergebnisse der Exploration
+
+```{r, exploratoryResults}
+# initialize
+rm(list = ls()[!(ls() %in% clean_workspace)])
+packages <- c("plm", "sandwich", "lmtest")
+for(i in packages){
+    if(!(i %in% rownames(installed.packages()))) {
+        cat("Now installing required package:\t", i)
+        install.packages(i, dependencies = TRUE)
+    }
+    library(i, character.only = TRUE)
+}
+
+
+# data preparation
+data_to_fit <- filter(country_panel, (in_tillman == 1)) %>%
+    mutate(pectotal_neu = pectotal_neu * 100)
+data_to_fit <- pdata.frame(data_to_fit, index = c("iso3c", "year2"))
+
+
+# Fit models
+fitted_models <- list()
+fitted_models[["baseline"]] <- plm(
+    turnout ~ pectotal_neu + enep + disprop * pr + plurality * closeness +
+        growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["type"]] <- plm(
+    turnout ~
+        any_type1 + any_type2 + any_type3 + any_type4 + any_type5 + any_type6 +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["type_vote"]] <- plm(
+    turnout ~
+        pectotal_neu +
+        any_type1 + any_type2 + any_type3 + any_type4 + any_type5 + any_type6 +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["incumbent"]] <- plm(
+    turnout ~
+        any_incumbent +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["incumbent_vote"]] <- plm(
+    turnout ~
+        pectotal_neu + any_incumbent +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["incumbentXtype"]] <- plm(
+    turnout ~
+        any_incumbent*any_type1 + any_incumbent*any_type2 +
+        any_incumbent*any_type3 + any_incumbent*any_type4 +
+        any_incumbent*any_type5 + any_incumbent*any_type6 +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["incumbentXtype_vote"]] <- plm(
+    turnout ~ pectotal_neu +
+        any_incumbent*any_type1 + any_incumbent*any_type2 +
+        any_incumbent*any_type3 + any_incumbent*any_type4 +
+        any_incumbent*any_type5 + any_incumbent*any_type6 +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["prog"]] <- plm(
+    turnout ~
+        any_prog +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["prog_vote"]] <- plm(
+    turnout ~
+        pectotal_neu + any_prog +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["progXtype"]] <- plm(
+    turnout ~
+        any_prog*any_type1 + any_prog*any_type2 +
+        any_prog*any_type3 + any_prog*any_type4 +
+        any_prog*any_type5 + any_prog*any_type6 +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+fitted_models[["progXtype_vote"]] <- plm(
+    turnout ~
+        pectotal_neu +
+        any_prog*any_type1 + any_prog*any_type2 +
+        any_prog*any_type3 + any_prog*any_type4 +
+        any_prog*any_type5 + any_prog*any_type6 +
+        enep + disprop * pr + plurality * closeness + growth + lnincome,
+    data = data_to_fit, effect = "twoways", model = "within"
+)
+ses <- lapply(fitted_models, vcovBK, cluster = "group")
+pvals <- lapply(fitted_models,
+    function(x) coeftest(x, vcov=function(m) vcovBK(m, cluster = "group"))[, 4]
+)
+
+
+# Simulate SEs for interaction terms
+nrep <- 1e4
+pdta <- data.frame(
+    mu = 0, lower90 = 0, lower95 = 0, upper90 = 0, upper95 = 0, condition = "",
+    model = "", coef = "" )[0, ]
+for (s in c("type", "type_vote")) {
+    m <- fitted_models[[s]]
+    base_terms <- grepl("^any_type[1-6]$", names(coef(m)))
+    beta_sim <- MASS::mvrnorm(nrep, coef(m), Sigma = vcov(m))
+    base_cis <- apply(beta_sim[, base_terms], 2, quantile, prob = c(.025, .05, .95, .975))
+    mu_base <- apply(beta_sim[, base_terms], 2, mean)
+    out <- data.frame(mu = mu_base, t(base_cis), condition = 0, model = s,
+        coef = colnames(base_cis), stringsAsFactors = FALSE
+    )
+    names(out)[grep("X", names(out))] <- c(
+        paste0("lower", c(95, 90)), paste0("upper", c(90, 95))
+    )
+    pdta <- rbind.data.frame(pdta, out)
+}
+for (s in c("incumbentXtype", "incumbentXtype_vote", "progXtype", "progXtype_vote")) {
+    m <- fitted_models[[s]]
+    base_terms <- grepl("^any_type[1-6]$", names(coef(m)))
+    inter_terms <- grepl(":any_type[1-6]$", names(coef(m)))
+    beta_sim <- MASS::mvrnorm(nrep, coef(m), Sigma = vcov(m))
+    beta_inter <- beta_sim[, base_terms] + beta_sim[, inter_terms]
+    base_cis <- apply(beta_sim[, base_terms], 2, quantile, prob = c(.025, .05, .95, .975))
+    mu_base <- apply(beta_sim[, base_terms], 2, mean)
+    out <- data.frame(mu = mu_base, t(base_cis), condition = 0, model = s,
+        coef = colnames(base_cis), stringsAsFactors = FALSE
+    )
+    inter_cis <- apply(beta_inter, 2, quantile, prob = c(.025, .05, .95, .975))
+    mu_inter <- apply(beta_inter, 2, mean)
+    out <- rbind.data.frame(
+        out,
+        data.frame(mu = mu_inter, t(inter_cis), condition = 1, model = s,
+            coef = colnames(base_cis),
+            stringsAsFactors = FALSE
+        )
+    )
+    names(out)[grep("X", names(out))] <- c(
+        paste0("lower", c(95, 90)), paste0("upper", c(90, 95))
+    )
+    pdta <- rbind.data.frame(pdta, out)
+}
+pdta[, "col"] <- as.numeric(grepl("vote", pdta$model))
+pdta[, "row"] <- ifelse(
+    grepl("^type", pdta$model), 0, ifelse(grepl("^incumbent", pdta$model), 1, 2)
+)
+pdta <- within(pdta, {
+    coef_label <- factor(coef, levels = c(
+            "any_type5", "any_type1", "any_type2", "any_type3", "any_type4",
+            "any_type6"
+        ),
+        labels = c("Public\nCommitment", "Nomination\nAgreement", "Joint\nList",
+            "Dual-ballot\nInstructions", "Vote Transfer\nInstructions",
+            "Other")
+    )
+    row_label <- factor(row, 0:2,
+        labels = c("Marginal", "Any\nincumbent?", "Any joint\nprogram?")
+    )
+    col_label <- factor(col, 0:1,
+        labels = c("Vote PEC not included", "Vote PEC included")
+    )
+    condition_label <- factor(condition, 0:1, c("No", "Yes"))
+    }
+)
+
+
+# Return plot
+shift <- position_dodge(width = .3)
+ggplot(subset(pdta, col == 1), aes(x = coef_label, y = mu, fill = condition_label)) +
+    geom_linerange(aes(ymin = lower95, ymax = upper95), position = shift) +
+    geom_linerange(aes(ymin = lower90, ymax = upper90), color = "white", size = 1.01, position = shift) +
+    geom_point(shape = 21, position = shift, size = 1) +
+    scale_fill_brewer(type = "seq", palette = 6) +
+    scale_x_discrete(drop = FALSE) +
+    scale_y_continuous(breaks = seq(0, -20, -10)) +
+    labs(y = expression(hat(beta))) +
+    facet_grid(row_label ~ col_label) +
+    ggthemes::theme_fivethirtyeight(base_size = 10) +
+    theme(
+        axis.title = element_text(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+        legend.title = element_blank(),
+        legend.position = c(.12, 1.05),
+        legend.background = element_rect(fill = "transparent"),
+        legend.key.size = grid::unit(1, "lines"),
+        strip.text.y = element_text(size = 5),
+        plot.margin = grid::unit(c(1, 1, 0, 1), "lines")
+    )
+
+
+# housekeeping
+for (p in packages) detach(paste("package", p, sep = ":"), character.only = TRUE)
+rm(list = ls()[!(ls() %in% clean_workspace)])
+```
+
+# Zusammenfassung
+
+\begin{center}
+    \textit{Welche Vorwahlkoalitionen steigern die Wahlbeteiligung?}
+\end{center}
+
+1. Vorwahlkoalitionen jeglicher Art *ohne* Einfluss
+2. Stimmergebnis Vorwahlkoalitionen $\sim$ Höhe der Wahlbeteiligung
+
+\textbf{Waschliste}
+\begin{enumerate}
+    \item Aggregationsniveau unangemessen $\rightarrow$ Granularität steigern
+    \item Verbindlichkeit von Vorwahlkoalitionen stärker theoretisieren
+    \item Skalenbildung $\rightarrow$ Tiefe-Breite-Antinomie von VWK
+\end{enumerate}
