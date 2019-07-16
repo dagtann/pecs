@@ -44,10 +44,10 @@ for (i in pec_indicators) {
 }
 summary(country_panel[, pec_shares])
 country_panel[, "smallpec_neu"] <- apply(
-    country_panel[, pec_shares], 1, function(r) any(r < .2, na.rm = TRUE)
+    country_panel[, pec_shares], 1, function(r) as.numeric(any(r < .2, na.rm = TRUE))
 )
 country_panel[, "largepec_neu"] <- apply(
-    country_panel[, pec_shares], 1, function(r) any(r >= .4, na.rm = TRUE)
+    country_panel[, pec_shares], 1, function(r) as.numeric(any(r >= .4, na.rm = TRUE))
 )
 # Sanity checks: Are there gross deviations?
 with(country_panel, table(smallpec, smallpec_neu))
