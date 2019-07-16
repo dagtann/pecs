@@ -18,8 +18,6 @@ for (p in packs) library(p, character.only = TRUE, quietly = TRUE)
 # Get panel from countrycode data
 country_panel <- codelist_panel
 names(country_panel) <- str_replace_all(names(country_panel), "\\.", "_")
-
-
 # Sanity check: What are the dimensions of the data?
 # dim(country_panel) # 30806 entries
 # length(unique(country_panel$country)) # 280 countries

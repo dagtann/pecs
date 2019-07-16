@@ -3,6 +3,9 @@
 # Author: Dag Tanneberg
 # Last update: 04/17/2019
 # Version info:
+#   07/16/2019: Dropped Gandrud dispropotionality data b/c matching problems
+#       country_panel
+#   07/15/2019: Added economic growth calculation
 #   05/06/2019 Added log gdp variable
 #   05/22/2019 Added turnout to vdem import, fixed year2 bug in disproportionality
 #       NOTE: Also added gdp per capita from VDEM which is obviously not an
@@ -34,36 +37,11 @@ electoral_system <- rename(electoral_system, vdem = country_id)
 # NOTE: Each panel entry is unique. Consequently, VDEM has a secret(?) method to
 #   deal with multiple elections within the same country-year.
 country_panel <- left_join(country_panel, electoral_system, by = c("vdem", "year"))
-country_panel <- mutate(country_panel, ln_e_migdppc = log(e_migdppc))
-
-# Gandrud disproportionality
-disproportionality <- fread(
-    file.path(path_archive, "disproportionality", "Disproportionality.csv")
-) %>%
-    mutate(iso3c = countrycode(iso2c, "iso2c", "iso3c", warn = TRUE))
-# Sanity check: Are all country entries known?
-# table(is.na(disproportionality$iso3c))
-# disproportionality[is.na(disproportionality$iso3c), ]
-# Unidentified entries in the original
-disproportionality <- filter(disproportionality, !is.na(iso3c))
-# Sanity check: Are all panel entries unique?
-# filter <- with(disproportionality, duplicated(paste(iso3c, year, sep = ":")))
-# table(filter)
-# disproportionality[filter, ] # Where is Great Britian 1974? -> Uses October
-disproportionality <- mutate(disproportionality, year2 = year * 10) %>%
-    mutate(year2 = ifelse(
-        (iso3c == "IRL" & disproportionality > 2 & year == 1982) |
-        (iso3c == "GBR" & disproportionality > 15 & year == 1974) |
-        (iso3c == "GRC" & disproportionality > 4 & year == 1989),
-        year2 + 1, year2)
-    )
-# filter <- with(disproportionality, duplicated(paste(iso3c, year2, sep = ":")))
-# table(filter) ## All unique
-country_panel <- left_join(
-    country_panel, select(disproportionality, -country, -iso2c, -year),
-    by = c("iso3c", "year2")
-)
-
+country_panel <- mutate(country_panel, ln_e_migdppc = log(e_migdppc)) %>%
+    group_by(iso3c) %>%
+    mutate(growth_neu = (lag(e_migdppc, order_by = year) - e_migdppc) / e_migdppc * 100) %>%
+    ungroup()
+# summary(country_panel[, c("e_migdppc", "ln_e_migdppc", "growth_neu")])
 
 # Housekeeping
 rm(list = ls()[!(ls() %in% clean_workspace)])

@@ -4,6 +4,8 @@
 # Author: Dag Tanneberg
 # Last update: 2019/04/25
 # Version info:
+#   2019/07/16: Added disproportionality to new indicators
+#   2019/07/15: Added plurality/turnout indicators
 #   2019/05/18 Removed TUR/CYP from source. Deleted redundant code.
 #   2019/05/15 Found country entries TUR and CYP during EDA, which are not included
 #       in the original raw data. Panel entries are dropped for the time being.
@@ -33,7 +35,7 @@ new_content <- c("election_date", "election_id", "twobiggest_parties", "blocvote
     "pectotal_inc",
     "pectotal_other", "pec10_neu", "pec20_neu", "pec30_neu",
     "enp_votes", "enp_seats", "advantage_ratio", "polarization", "dm_eff",
-    "in_lsvergl"
+    "in_lsvergl", "turnout_neu", "plurality_neu", "disproportionality"
     # paste("any", c(paste0("type", 1:6), "progr", "incumbent"), sep = "_")
 )
 
@@ -41,7 +43,10 @@ new_content <- c("election_date", "election_id", "twobiggest_parties", "blocvote
 lsvergl <- read.dta(
     file.path(path_project, "dta", "raw", "PEC_LSVERGL_2.dta")
 ) %>%
-    mutate(in_lsvergl = TRUE) # flag for country_panel
+    mutate(in_lsvergl = TRUE,  # flag for country_panel
+        plurality_neu = (dm_eff == 1)
+    )  %>% # alternative plurality indicator
+    rename(turnout_neu = turnout)
 # Sanity check: Are panel entries uniquely identified?
 duplicates <- with(lsvergl, duplicated(paste(c, year2, sep = ":")))
 table(duplicates); rm(duplicates)
@@ -57,6 +62,7 @@ summary(lsvergl[, new_content])
 # Merge Datasets
 country_panel <- full_join(country_panel, lsvergl, by = c("iso3c", "year2"))
 tillman <- left_join(tillman, lsvergl, by = c("iso3c", "year2"))  # Trainingset
+
 # Execute fixed effects transformation for Tillman
 polarization_bw <- tillman %>%
     select(iso3c, polarization) %>%

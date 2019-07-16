@@ -1,3 +1,5 @@
+# Version info:
+    # 07/15/2019: Script now calculates closeness of elections
 rm(list = ls()[!(ls() %in% clean_workspace)])
 packs <- c("lubridate")
 if (!all(packs %in% installed.packages())) {
@@ -7,6 +9,15 @@ if (!all(packs %in% installed.packages())) {
     rm(mask)
 }
 for (p in packs) library(p, character.only = TRUE)
+
+
+# functions
+calc_closeness <- function(votes) {
+    # Closeness of elections: Distance between 2 strongest parties.
+    sorted <- sort(votes, decreasing = TRUE)
+    return(sorted[1] - sorted[2])
+}
+
 
 # data objects
 pecs <- read_dta(
@@ -83,6 +94,15 @@ res <- vapply(
 res <- as.data.frame(cbind(res, tmp[["election_id"]]))
 colnames(res) <- c(paste("any", c("prog", "incumbent"), sep = "_"), "election_id")
 country_panel <- left_join(country_panel, res, by = "election_id")
+
+
+# Compute closeness of elections
+tmp <- select(pecs, election_id, vote_share) %>%
+    group_by(election_id) %>%
+    mutate(closeness_neu = calc_closeness(vote_share)) %>%
+    ungroup()
+tmp <- aggregate(closeness_neu ~ election_id, data = tmp, FUN = mean, na.rm = TRUE)
+country_panel <- left_join(country_panel, tmp, by = "election_id")
 
 
 if (FALSE) {  # Commented b/c massive problems on join
