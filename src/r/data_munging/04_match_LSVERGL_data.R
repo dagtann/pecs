@@ -44,7 +44,7 @@ lsvergl <- read.dta(
     file.path(path_project, "dta", "raw", "PEC_LSVERGL_2.dta")
 ) %>%
     mutate(in_lsvergl = TRUE,  # flag for country_panel
-        plurality_neu = (dm_eff == 1)
+        plurality_neu = as.numeric(dm_eff == 1)
     )  %>% # alternative plurality indicator
     rename(turnout_neu = turnout)
 # Sanity check: Are panel entries uniquely identified?
