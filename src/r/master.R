@@ -17,6 +17,7 @@ rm(packs, i)
 path_project <- file.path("~", "github", "pecs")
 path_archive <- file.path("~", "OneDrive", "data", "archive")
 base_size <- 18 # plot character size
+plot_width <- 10
 clean_workspace <- c(ls(), "clean_workspace")
 
 # Data munging
