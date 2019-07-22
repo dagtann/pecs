@@ -9,6 +9,12 @@ if (!all(packs %in% installed.packages())) {
 }
 for (p in packs) library(p, character.only = TRUE)
 
+# functions
+find_mode <- function(x){
+    tbl <- table(x)
+    max_freq <- max(tbl)
+    names(which(tbl == max_freq))
+}
 
 # Raw data & Hooks
 pecs <- read_dta(
@@ -65,13 +71,16 @@ aggregated_information <- lapply(
 )
 pecs_long <- plyr::join_all(aggregated_information,
                             by = c("iso3c", "election_id", "pec_no"))
-pecs_long <- pecs_long %>%
+mode_type <- aggregate(types ~ iso3c, data = pecs_long, FUN = find_mode)
+names(mode_type)[2] <- "mode_type"
+no_prog <- pecs_long %>%
     group_by(iso3c) %>%
-    mutate(no_prog = sum(programs, na.rm = TRUE),
-           median_type = median(types, na.rm = TRUE)) %>%
-    select(iso3c, no_prog, median_type) %>%
+    mutate(no_prog = sum(programs, na.rm = TRUE)) %>%
+    select(iso3c, no_prog) %>%
     summarize_all(mean) %>%
     ungroup()
-table_data <- inner_join(table_data, pecs_long, by = "iso3c") %>%
-    select(-iso3c)
+
+table_data <- left_join(table_data, mode_type, by = "iso3c")
+table_data <- left_join(table_data, no_prog, by = "iso3c")
+table_data <- table_data %>% select(-iso3c)
 write_csv2(table_data, file.path(path_project, "out", "eda_summaryByCountry.csv"))
