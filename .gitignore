@@ -4,8 +4,10 @@
 
 # Folders
 out/*
+dta/*
 
 # Output files
+out/*
 rpt/*.pdf
 
 # History files
