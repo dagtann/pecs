@@ -1,3 +1,9 @@
+# Generate a summary table showing basic descriptive information on countries and
+# PECs. The script returns a csv file fit for viewing in Excel.
+# Author: Dag Tanneberg
+# Version info:
+#   07/19/2019: Feature complete version 1.0
+# ==============================================================================
 # Preamble
 rm(list = ls()[!(ls() %in% clean_workspace)])
 packs <- "lubridate"
@@ -18,26 +24,22 @@ find_mode <- function(x){
 
 # Raw data & Hooks
 pecs <- read_dta(
-    file.path(path_project, "dta", "raw", "PEC_raw_stable15_2.dta"),
-    encoding = "latin1"
-) %>%
+                 file.path(path_project, "dta", "raw", "PEC_raw_stable15_2.dta"),
+                 encoding = "latin1") %>%
     rename(iso3c = country_name_short)
 indicators <- list(
-    types = grep("^pec[0-9]_type$", names(pecs)),
-    incumbents = grep("^pec[0-9]_incumbent$", names(pecs)),
-    programs = grep("^pec[0-9]_prog$", names(pecs))
-)
+                   types = grep("^pec[0-9]_type$", names(pecs)),
+                   incumbents = grep("^pec[0-9]_incumbent$", names(pecs)),
+                   programs = grep("^pec[0-9]_prog$", names(pecs)))
 lsvergl <- read_dta(
     file.path(path_project, "dta", "raw", "PEC_LSVERGL_2.dta"), encoding = "latin1"
 )
 
-
-# Data dimensions
+# EDA: Data dimensions reported in text
 length(unique(pecs$iso3c))  # 35
 length(unique(pecs$election_id))  # 562
 range(year(pecs$election_date))  # 1945 - 2015
 sum(lsvergl$nupec_neu)  # 493
-
 
 # Detailed summary table by country
 table_data <- lsvergl %>%
@@ -84,3 +86,7 @@ table_data <- left_join(table_data, mode_type, by = "iso3c")
 table_data <- left_join(table_data, no_prog, by = "iso3c")
 table_data <- table_data %>% select(-iso3c)
 write_csv2(table_data, file.path(path_project, "out", "eda_summaryByCountry.csv"))
+
+# Housekeeping
+for (p in packs) detach(paste0("package:", p), character.only=TRUE)
+rm(list = ls()[!(ls() %in% clean_workspace)])

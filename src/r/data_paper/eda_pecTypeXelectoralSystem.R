@@ -10,14 +10,12 @@
 # Preamble
 rm(list = ls()[!(ls() %in% clean_workspace)])
 
-
 # Functions
 calc_closeness <- function(votes) {
     # Closeness of elections: Distance between 2 strongest parties.
     sorted <- sort(votes, decreasing = TRUE)
     return(sorted[1] - sorted[2])
 }
-
 
 # Raw data & Hooks
 pecs <- read_dta(
@@ -34,7 +32,6 @@ indicators <- list(
     programs = grep("^pec[0-9]_prog$", names(pecs))
 )
 esystem_properties <- c("dm_eff", "disproportionality", "enp_votes")
-
 
 # Convert pecs*_type/incumbent/prog from wide to long format
 aggregated_information <- lapply(
@@ -79,7 +76,6 @@ esystem_data <- lapply(
 )
 esystem_data <- do.call(rbind, esystem_data)
 
-
 # Return table
 attribute_labels <- c("Type", "", "", "", "", "", "Joint program?", "",
     "Incumbent coalition?", ""
@@ -101,7 +97,6 @@ tmp[1] <- paste0("Attribute;Value;Abs. Freq.;Rel. Freq;District Magnitude;",
     "Disproportionality;Electoral Parties"
 )
 writeLines(tmp, file.path(path_project, "out", "eda_pecTypeXelectoralSystem.csv"))
-
 
 # Housekeeping
 rm(list = ls()[!(ls() %in% clean_workspace)])

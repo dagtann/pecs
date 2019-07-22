@@ -36,7 +36,10 @@ for(i in 1:length(treatment)) {
     )
 }
 names(fitted_models) <- treatment
-lapply(fitted_models, summary)
+lapply(fitted_models, function(m){
+    lmtest::coeftest(m, vcov=function(x){vcovBK(x, cluster = "group")})
+})
+
 vcovBK(fitted_models[[1]], cluster = c("group"))
 coeftest(fitted_models[[1]], vcov = vcovBK(fitted_models[[1]], cluster = c("group")))
 coeftest(fitted_models[[3]], vcov = vcovBK(fitted_models[[3]], cluster = c("group")))

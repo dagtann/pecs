@@ -104,6 +104,15 @@ tmp <- select(pecs, election_id, vote_share) %>%
 tmp <- aggregate(closeness_neu ~ election_id, data = tmp, FUN = mean, na.rm = TRUE)
 country_panel <- left_join(country_panel, tmp, by = "election_id")
 
+# Add new econ data to tillman
+tmp <- select(country_panel, iso3c, year2, e_migdppc)
+tillman <- left_join(tillman, tmp, by = c("iso3c", "year2")) %>%
+    group_by(iso3c) %>%
+    mutate(
+           growth_neu = (lag(e_migdppc, order_by = year) - e_migdppc) /
+                         e_migdppc * 100,
+           ln_e_migdppc = log(e_migdppc))
+
 
 if (FALSE) {  # Commented b/c massive problems on join
 # Create cabinet member indicator

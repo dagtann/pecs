@@ -36,8 +36,8 @@ treatments <- c("pec_neu", "pec20_neu", "pectotal_neu", "smallpec_neu",
                 "largepec_neu")
 controls <- paste(
                   c("enp_votes", "disproportionality",
-                    "plurality_neu * closeness_neu", "growth_neu",
-                    "ln_e_migdppc"),
+                    "plurality_neu * closeness_neu", "growth", #_neu",
+                    "lnincome"), #"ln_e_migdppc"),
                   collapse = " + "
 )
 datasets <- list(
@@ -46,7 +46,7 @@ datasets <- list(
             iso3c, year2, election_id,
             turnout_neu, pec1, pec20, vote_pec, smallpec, largepec,
             enp_votes, disproportionality, plurality_neu, closeness_neu,
-            growth_neu, ln_e_migdppc
+            growth, lnincome #_neu, ln_e_migdppc
         ) %>%
         rename(pec_neu = pec1, pec20_neu = pec20, pectotal_neu = vote_pec,
             smallpec_neu = smallpec, largepec_neu = largepec
@@ -57,14 +57,14 @@ datasets <- list(
             iso3c, year2, election_id,
             turnout_neu, pec_neu, pec20_neu, pectotal_neu, smallpec_neu,
             largepec_neu, enp_votes, disproportionality, plurality_neu,
-            closeness_neu, growth_neu, ln_e_migdppc
+            closeness_neu, growth, lnincome #_neu, ln_e_migdppc
         ),
     lsvergl = filter(country_panel, in_lsvergl == 1) %>%
         select(
             iso3c, year2, election_id,
             turnout_neu, pec_neu, pec20_neu, pectotal_neu, smallpec_neu,
             largepec_neu, enp_votes, disproportionality, plurality_neu,
-            closeness_neu, growth_neu, ln_e_migdppc
+            closeness_neu, growth, lnincome #_neu, ln_e_migdppc
         )
 )
 
@@ -77,7 +77,7 @@ replication_results <- lapply(datasets, function(d){
         out[[t]] <- plm(
             construct_formula(treatment = t, control = controls),
             data = pdata.frame(d, index = c("iso3c", "year2")),
-            effects = "twoway", model = "within"
+            effects = "twoways", model = "within"
         )
     }
     return(out)
@@ -87,7 +87,7 @@ replication_results <- lapply(datasets, function(d){
 
 # generate plot
 pdta <- do.call(rbind.data.frame, lapply(replication_results,
-                retrieve_estimates, estimates = treatments))
+                retrieve_estimates, estimates = treatments, cluster = "group"))
 pdta[, "data"] <- str_split(rownames(pdta), pattern = "[:punct:]",
                             simplify = TRUE)[, 1]
 pdta[, "type"] <- rep(c("beta", "sigma"), length(replication_results))
