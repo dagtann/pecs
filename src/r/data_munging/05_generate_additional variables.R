@@ -1,7 +1,8 @@
 # Version info:
+    # 07/25/2019: Added WDI gdp data
     # 07/15/2019: Script now calculates closeness of elections
 rm(list = ls()[!(ls() %in% clean_workspace)])
-packs <- c("lubridate")
+packs <- c("lubridate", "WDI", "pwt9")
 if (!all(packs %in% installed.packages())) {
     mask <- packs %in% installed.packages()
     cat("Installing packages:", packs[!mask], "\n")
@@ -17,7 +18,11 @@ calc_closeness <- function(votes) {
     sorted <- sort(votes, decreasing = TRUE)
     return(sorted[1] - sorted[2])
 }
-
+load_pwt9 <- function(select = c("rgdpe", "pop")){
+    data(pwt9.1, package = "pwt9")
+    out <- subset(pwt9.1, select = c("isocode", "year", select))
+    return(out)
+}
 
 # data objects
 pecs <- read_dta(
@@ -61,7 +66,7 @@ tmp <- aggregate(
     FUN = function(x) ifelse(all(is.na(x)), 0, max(x, na.rm = TRUE))
 )
 type_lookup <- sort(unique(unlist(tmp[, -1])))
-type_lookup <- type_lookup[-which.min(type_lookup)]
+type_lookup <- type_lookup[-which.min(type_lookup)]  # removes 0 entries
 tmp <- gather(tmp, "pec", "type", 2:ncol(tmp))
 res <- outer(tmp[["type"]], type_lookup, "==")
 res <- as.data.frame(cbind(res, tmp[["election_id"]]))
@@ -104,14 +109,43 @@ tmp <- select(pecs, election_id, vote_share) %>%
 tmp <- aggregate(closeness_neu ~ election_id, data = tmp, FUN = mean, na.rm = TRUE)
 country_panel <- left_join(country_panel, tmp, by = "election_id")
 
-# Add new econ data to tillman
-tmp <- select(country_panel, iso3c, year2, e_migdppc)
-tillman <- left_join(tillman, tmp, by = c("iso3c", "year2")) %>%
+# Add new econ data
+if(!file.exists(file.path(path_project, "dta", "raw", "wdi_gdp.csv"))) {
+    wdi_data <- WDI(unique(country_panel$iso2c),
+                    c("NY.GDP.PCAP.KD", "NY.GDP.MKTP.PP.KD"), 1945, 2015)
+    write_csv2(wdi_data, file.path(path_project, "dta", "raw", "wdi_gdp.csv"))
+}
+wdi_data <- read_csv2(file.path(path_project, "dta","raw", "wdi_gdp.csv")) %>%
+    select(-country)
+country_panel <- left_join(country_panel, wdi_data, by = c("iso2c", "year"))
+country_panel <- country_panel %>%
     group_by(iso3c) %>%
-    mutate(
-           growth_neu = (lag(e_migdppc, order_by = year) - e_migdppc) /
-                         e_migdppc * 100,
-           ln_e_migdppc = log(e_migdppc))
+    mutate_at(
+        vars(e_migdppc, NY.GDP.PCAP.KD, NY.GDP.MKTP.PP.KD),
+        list(log = log,
+            growth = function(x) (lag(x) - x) / x * 100
+        )
+    ) %>%
+    ungroup()
+pwt9_data <- load_pwt9()
+pwt9_data <- pwt9_data %>%
+    rename(iso3c = isocode) %>%
+    group_by(iso3c) %>%
+    mutate(rgdpepc = rgdpe / pop, rgdpec_log = log(rgdpepc),
+        rgdpec_growth = (lag(rgdpepc, order_by = year) - rgdpepc) /
+            rgdpepc * 100
+    ) %>%
+    ungroup() %>%
+    select(-pop, -rgdpe)
+country_panel <- left_join(country_panel, pwt9_data, by = c("iso3c", "year"))
+
+tmp <- select(
+    country_panel, iso3c, year2,
+    e_migdppc, rgdpepc, NY.GDP.PCAP.KD, NY.GDP.MKTP.PP.KD,
+    e_migdppc_log, rgdpec_log, NY.GDP.PCAP.KD_log, NY.GDP.MKTP.PP.KD_log,
+    e_migdppc_growth, rgdpec_growth, NY.GDP.PCAP.KD_growth, NY.GDP.MKTP.PP.KD_growth
+)
+tillman <- left_join(tillman, tmp, by = c("iso3c", "year2"))
 
 
 if (FALSE) {  # Commented b/c massive problems on join
@@ -178,3 +212,10 @@ tmp[is.na(tmp$cabinet_party), c("country_name_short", "election_date", "party_na
 
 for (p in packs) detach(paste("package", p, sep = ":"), character.only = TRUE)
 rm(list = ls()[!(ls() %in% clean_workspace)])
+## END
+
+# Note 1: WDI lacks the following microstates:
+    # c("VA", "AI", "AX", "AQ", "TF", "BQ", "BL", "BV", "CC", "CK", "CX", "EH",
+    #   "FK", "GG", "GP", "GF", "HM", "IO", "JE", "MS", "MQ", "YT", "NF", "NU",
+    #   "PN", "RE", "GS", "SH", "SJ", "PM", "TK", "UM", "WF")
+    # Warning is inconsequential for our purposes.
