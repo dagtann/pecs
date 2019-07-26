@@ -42,16 +42,15 @@ country_panel <- mutate(country_panel, ln_e_migdppc = log(e_migdppc)) %>%
     mutate(growth_neu = (lag(e_migdppc, order_by = year) - e_migdppc) / e_migdppc * 100) %>%
     ungroup()
 # summary(country_panel[, c("e_migdppc", "ln_e_migdppc", "growth_neu")])
-golder <- read_dta(file.path(path_archive, "electoralSystems", "v3",
-    "es_data-v3", "es_data-v3.dta"), encoding = "latin1"
-)
-tmp <- golder %>% select(ccode, year, elec_id, tier1_avemag) %>%
-    mutate(year2 = year * 10) %>%
-    mutate(year2 = ifelse())
-mask <- with(country_panel, year2 %% year != 0)
-dmy(golder$date) %in% ymd(country_panel[mask, c("election_date", "iso3c")])
+# golder <- read_dta(file.path(path_archive, "electoralSystems", "v3",
+#     "es_data-v3", "es_data-v3.dta"), encoding = "latin1"
+# )
+# tmp <- golder %>% select(ccode, year, elec_id, tier1_avemag) %>%
+#     mutate(year2 = year * 10) %>%
+#     mutate(year2 = ifelse())
+# mask <- with(country_panel, year2 %% year != 0)
+# dmy(golder$date) %in% ymd(country_panel[mask, c("election_date", "iso3c")])
 
-head(golder$date)
 # Housekeeping
 rm(list = ls()[!(ls() %in% clean_workspace)])
 detach(package:data.table)
