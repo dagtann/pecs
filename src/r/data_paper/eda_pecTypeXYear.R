@@ -3,6 +3,7 @@
 # time. The script returns a png file.
 # Author: Dag Tanneberg
 # Version info:
+#   07/26/2019: Added facetting by region. Redirected output to new file.
 #   07/20/2019: Fixed fill colour bug, reformatted, added housekeeping.
 #   07/20/2019: First version.
 # ==============================================================================
@@ -27,7 +28,11 @@ fill_colors <- c("#7fc97f", "#beaed4", "#fdc086", "#ffff99", "#386cb0",
 pecs <- read_dta(
                  file.path(path_project, "dta", "raw", "PEC_raw_stable15_2.dta"),
                  encoding = "latin1") %>%
-    rename(iso3c = country_name_short)
+    rename(iso3c = country_name_short) %>%
+    group_by(iso3c) %>%
+    mutate(newdem = ifelse(min(year(election_date)) >= 1989, 1, 0)) %>%
+    ungroup()
+
 indicators <- list(
                    pecs = grep("^pec[0-9]$", names(pecs)),
                    types = grep("^pec[0-9]_type$", names(pecs)),
@@ -53,7 +58,7 @@ aggregated_information <- lapply(seq(indicators), function(l) {
 pecs_long <- plyr::join_all(aggregated_information,
                             by = c("iso3c", "election_id", "pec_no"))
 pecs_long <- filter(pecs_long, pecs == 1)
-tmp <- select(pecs, election_id, election_date) %>%
+tmp <- select(pecs, election_id, election_date, newdem) %>%
     mutate(year = year(election_date)) %>%
     select(-election_date) %>%
     group_by(election_id) %>%
@@ -63,20 +68,20 @@ rm(tmp)
 
 
 # Prepare plot data
-freq_pecs <- aggregate(pecs ~ year + types, data = pecs_long, FUN = sum)
-names(freq_pecs)[3] <- c("freq")
-freq_pecs[, "facet"] <- "Type"
-freq_incumbents <- aggregate(pecs ~ year + incumbents, data = pecs_long,
+freq_pecs <- aggregate(pecs ~ year + types + newdem, data = pecs_long, FUN = sum)
+names(freq_pecs)[ncol(freq_pecs)] <- "freq"
+freq_pecs[, "column"] <- "Type"
+freq_incumbents <- aggregate(pecs ~ year + incumbents + newdem, data = pecs_long,
                              FUN = sum, na.rm = TRUE)
 freq_incumbents <- subset(freq_incumbents, incumbents == 1)
-names(freq_incumbents)[2:3] <- c("facet", "freq")
-freq_incumbents[, "facet"] <- "Incumbency"
+names(freq_incumbents)[c(2, 4)] <- c("column", "freq")
+freq_incumbents[, "column"] <- "Incumbency"
 freq_incumbents[, "types"] <- -99
-freq_programs <- aggregate(pecs ~ year + programs, data = pecs_long,
+freq_programs <- aggregate(pecs ~ year + programs + newdem, data = pecs_long,
                            FUN = sum, na.rm = TRUE)
 freq_programs <- subset(freq_programs, programs == 1)
-names(freq_programs)[2:3] <- c("facet", "freq")
-freq_programs[, "facet"] <- "Joint program"
+names(freq_programs)[c(2, 4)] <- c("column", "freq")
+freq_programs[, "column"] <- "Joint program"
 freq_programs[, "types"] <- -99
 pdta <- rbind.data.frame(freq_pecs, freq_incumbents, freq_programs)
 pdta <- within(pdta, {
@@ -86,25 +91,27 @@ pdta <- within(pdta, {
                                                "Dual-ballot instructions",
                                                "Vote transfer instructions",
                                                "Public commitment", "Other"))
-              facet_label <- factor(facet, levels = c("Type", "Incumbency",
-                                                      "Joint program"))})
+              column_label <- factor(column, levels = c("Type", "Incumbency",
+                                                      "Joint program"))
+              row_label <- factor(newdem, 0:1,
+                                  c("World", "CEE"))})
 
 
 # Generate plot
-p <- ggplot(data = pdta, aes(x = year, y = freq)) + 
+p <- ggplot(data = pdta, aes(x = year, y = freq)) +
     geom_point(aes(y = freq - .5, colour = types_label), size = 0) +
     geom_bar(fill = "#3C3C3C", size = 0.1, width = 1, stat = "identity") +
     geom_bar(aes(fill = types_label), colour = "white", size = 0.1, width = 1,
                  stat = "identity", show.legend = FALSE) +
-    facet_wrap(~ facet_label) +
+    facet_grid(row_label ~ column_label) +
     scale_color_manual(values = fill_colors, na.translate = FALSE) +
-    scale_fill_manual(values = fill_colors, na.translate = FALSE) + 
+    scale_fill_manual(values = fill_colors, na.translate = FALSE) +
     labs(y = "Count") +
     guides(colour = guide_legend(override.aes = list(size = 2))) +
     ggthemes::theme_fivethirtyeight(base_size = base_size) +
-    theme(axis.title = element_text(),axis.title.x = element_blank(), 
+    theme(axis.title = element_text(),axis.title.x = element_blank(),
           legend.key = element_blank(), legend.title = element_blank())
-ggsave(file.path(path_project, "out", "bar_pecTypeYear.png"), p,
+ggsave(file.path(path_project, "out", "bar_pecTypeYearNewdem.png"), p,
        width = plot_width, height = plot_width / 1.618)
 
 
