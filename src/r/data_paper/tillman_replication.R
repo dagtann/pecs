@@ -1,3 +1,7 @@
+# Problem Diagnosis: (a) Cannot join effect estimates into a matrix b/c one model
+#   outputs twice the number of effect estimates. (b) coef plot will need new
+#   layout since smallpec and largepec go into the same model!
+
 rm(list = ls()[!(ls() %in% clean_workspace)])
 packs <- c("plm")
 if (!all(packs %in% installed.packages())) {
@@ -27,16 +31,16 @@ retrieve_estimate <- function(model, estimates, cluster = "group"){
 
 
 retrieve_estimates <- function(model.list, ...){
-    vapply(model.list, FUN = retrieve_estimate, FUN.VALUE = numeric(2), ...)
+    sapply(model.list, FUN = retrieve_estimate, ...) #FUN.VALUE = numeric(2), ...)
 }
 
 
 # Data
-treatments <- c("pec_neu", "pec20_neu", "pectotal_neu", "smallpec_neu",
-                "largepec_neu")
+treatments <- c("pec" = "pec_neu", "pec20" = "pec20_neu",
+    "pectotal" = "pectotal_neu", "small_large" = "smallpec_neu+largepec_neu")
 controls <- paste(
                   c("enp_votes", "disproportionality",
-                    "plurality_neu * closeness_neu", "growth", #_neu",
+                    "closeness_neu * plurality_neu", "growth", #_neu",
                     "lnincome"), #"ln_e_migdppc"),
                   collapse = " + "
 )
@@ -72,12 +76,12 @@ datasets <- list(
 # Execute replication
 replication_results <- lapply(datasets, function(d){
     out <- vector("list", length = length(treatments))
-    names(out) <- treatments
-    for (t in treatments) {
+    names(out) <- names(treatments)
+    for (t in names(treatments)) {
         out[[t]] <- plm(
-            construct_formula(treatment = t, control = controls),
+            construct_formula(treatment = treatments[t], control = controls),
             data = pdata.frame(d, index = c("iso3c", "year2")),
-            effects = "twoways", model = "within"
+            effects = "individual", model = "within"
         )
     }
     return(out)
@@ -85,9 +89,16 @@ replication_results <- lapply(datasets, function(d){
 )
 
 
+do.call(retrieve_estimate, arg = list(model = replication_results, estimates = unlist(str_split(treatments, "\\+")))
+)
+for()
+
+
+lapply(replication_results,
+                retrieve_estimates, estimates = unlist(str_split(treatments, "\\+")), cluster = "group")
 # generate plot
 pdta <- do.call(rbind.data.frame, lapply(replication_results,
-                retrieve_estimates, estimates = treatments, cluster = "group"))
+                retrieve_estimates, estimates = unlist(str_split(treatments, "\\+")), cluster = "group"))
 pdta[, "data"] <- str_split(rownames(pdta), pattern = "[:punct:]",
                             simplify = TRUE)[, 1]
 pdta[, "type"] <- rep(c("beta", "sigma"), length(replication_results))
