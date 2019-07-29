@@ -2,6 +2,7 @@
 # PECs. The script returns a csv file fit for viewing in Excel.
 # Author: Dag Tanneberg
 # Version info:
+#   07/29/2019: Used more readable variable label in aggregate_information
 #   07/19/2019: Feature complete version 1.0
 # ==============================================================================
 # Preamble
@@ -56,10 +57,10 @@ table_data <- lsvergl %>%
 # Convert pecs*_type/incumbent/prog from wide to long format
 aggregated_information <- lapply(
     seq(indicators),
-    function(l) {
-        val_label <- names(indicators)[l]
+    function(indicator) {
+        val_label <- names(indicators)[indicator]
         out <- aggregate(
-            pecs[, indicators[[l]]],
+            pecs[, indicators[[indicator]]],
             list(iso3c = pecs[["iso3c"]], election_id = pecs[["election_id"]]),
             FUN = function (row) {
                 ifelse(all(is.na(row)), NA, max(row, na.rm = TRUE))
