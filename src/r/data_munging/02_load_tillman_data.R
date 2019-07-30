@@ -2,6 +2,7 @@
 # Author: Dag Tanneberg
 # Last update: 05/02/2019
 # Version info:
+#   07/30/2019: Bug fix: add na.rm to within-transformation
 #   05/18/2019  Updated year2 generation. Now correctly identifies double election
 #       entries in IRL, GBR, GRC.
 #   05/02/2019; Found & corrected coding error: Spain 2008 listed as 2008
@@ -45,7 +46,7 @@ tillman <- select(tillman,
 # Apply fixed effects transformation
 bw <- select(tillman, -country, -year, -year2, -in_tillman) %>%
     group_by(iso3c) %>%
-    summarize_all(list(bw = mean)) %>%
+    summarize_all(list(bw = mean), na.rm = TRUE) %>%
     ungroup()
 tillman <- left_join(tillman, bw, by = "iso3c")
 vars <- sapply( # stemmed varnames for w/i transformation
