@@ -12,7 +12,7 @@ knitr::opts_chunk$set(
     fig.width = 12, fig.height = 8, warning = FALSE, message = FALSE,
     fig.lp="fig:", fig.pos="t"
 )
-source("~/github/pecs/src/r/master.R")
+source("~/github/pecs/src/r/initialize_workspace.R")
 ```
 
 \maketitle
@@ -524,7 +524,7 @@ for(i in seq(lines_to_add)) {
     )
 }
 tmp <- c(tmp[1:(split_at - 1)], lines_to_add, tmp[split_at:length(tmp)])
-writeLines(tmp, con = file.path(path_project, "artcl", "detrended_models.tex"))
+writeLines(tmp, con = file.path(path_project, "artcl", "pol_behav", "detrended_models.tex"))
 
 
 # housekeeping
