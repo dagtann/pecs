@@ -2,6 +2,7 @@
 # PECs. The script returns a csv file fit for viewing in Excel.
 # Author: Dag Tanneberg
 # Version info:
+#   08/01/2019: Added mean number of parties in PEC per country
 #   07/29/2019: Used more readable variable label in aggregate_information
 #   07/19/2019: Feature complete version 1.0
 # ==============================================================================
@@ -33,8 +34,8 @@ indicators <- list(
                    incumbents = grep("^pec[0-9]_incumbent$", names(pecs)),
                    programs = grep("^pec[0-9]_prog$", names(pecs)))
 lsvergl <- read_dta(
-    file.path(path_project, "dta", "raw", "PEC_LSVERGL_2.dta"), encoding = "latin1"
-)
+                    file.path(path_project, "dta", "raw", "PEC_LSVERGL_2.dta"),
+                    encoding = "latin1")
 
 # EDA: Data dimensions reported in text
 length(unique(pecs$iso3c))  # 35
@@ -83,8 +84,20 @@ no_prog <- pecs_long %>%
     summarize_all(mean) %>%
     ungroup()
 
+no_parties <- pecs[, c(1, 12, grep("^pec[0-9]$", names(pecs)))]
+no_parties <- no_parties %>%
+    group_by(iso3c, election_id) %>%
+    summarize_at(paste0("pec", 1:7), sum, na.rm = TRUE) %>%
+    ungroup() %>%
+    select(-election_id) %>%
+    group_by(iso3c) %>%
+    gather("key", "no_parties", 2:8) %>%
+    filter(no_parties != 0) %>%
+    summarize_at(vars(no_parties), mean)
+
 table_data <- left_join(table_data, mode_type, by = "iso3c")
 table_data <- left_join(table_data, no_prog, by = "iso3c")
+table_data <- left_join(table_data, no_parties, by = "iso3c")
 table_data <- table_data %>% select(-iso3c)
 write_csv2(table_data, file.path(path_project, "out", "eda_summaryByCountry.csv"))
 
