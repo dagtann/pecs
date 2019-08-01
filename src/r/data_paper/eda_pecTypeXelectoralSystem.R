@@ -64,6 +64,12 @@ pec_freqs <- apply(pecs_long[, c("types", "programs", "incumbents")], 2,
         abs_freq = table(col), rel_freq = prop.table(table(col))
     )
 )
+pa_vs_all <- ifelse(pecs_long$types != 5, 7, 5)
+pec_freqs[[1]] <- rbind(
+    pec_freqs[[1]],
+    cbind(abs_freq = table(pa_vs_all), rel_freq = prop.table(table(pa_vs_all)))[2, ])
+rownames(pec_freqs[[1]]) <- seq(7)
+
 tmp <- select(country_panel, iso3c, election_id, esystem_properties)
 pecs_long <- left_join(pecs_long, tmp, by = c("iso3c", "election_id"))
 esystem_data <- lapply(
@@ -74,15 +80,20 @@ esystem_data <- lapply(
         )
     }
 )
+esystem_data[[1]] <- rbind.data.frame(  # add public announcement (5) vs. all (7)
+    esystem_data[[1]],
+    aggregate(pecs_long[, esystem_properties],
+              list(types = ifelse(pecs_long[["types"]] != 5, 7, 5)),
+              FUN = median, na.rm = TRUE)[2, ])
 esystem_data <- do.call(rbind, esystem_data)
 
 # Return table
-attribute_labels <- c("Type", "", "", "", "", "", "Joint program?", "",
+attribute_labels <- c("Type", "", "", "", "", "", "", "Joint program?", "",
     "Incumbent coalition?", ""
 )
 value_labels <- c("Nomination Agreement", "Joint List",
     "Dual-Ballot Instructions", "Vote Transfer Instructions",
-    "Public Commitment", "Other", "No", "Yes", "No", "Yes"
+    "Public Commitment", "Other", "All but PA", "No", "Yes", "No", "Yes"
 )
 tbl <- cbind(do.call(rbind, pec_freqs), t(do.call(rbind, esystem_data)))
 tbl <- tbl[, c(1, 2, 4:ncol(tbl))]
