@@ -34,22 +34,22 @@ npec_data <- country_panel %>%
     rename(iso_a3 = iso3c)
 world <- left_join(world, npec_data, by = "iso_a3")
 
-
 # Generate plot
 p <- ggplot() +
-    geom_sf(data = coastlines, size = 0.1) + 
-    geom_sf(data = world, aes(fill = npec), colour = "#F0F0F0", size = 0.1) +
-    scale_fill_gradient(low = "#fcfbfd", high = "#3f007d", na.value = "#F0F0F0") +
+    geom_sf(data = coastlines, size = 0.3) +
+    # layer world 2 reduce overplotting country borders
+    geom_sf(data = subset(world, is.na(npec)),
+            fill = "white", colour = "white", size = 0.1) +
+    geom_sf(data = subset(world, !is.na(npec)), aes(fill = npec),
+            colour = "#3C3C3C", size = 0.1) +
+    scale_fill_gradient(low = "white", high = "black", na.value = "white") +
+    scale_colour_manual(values = c("black", "white")) +
     coord_sf(
              crs = paste0("+proj=robin"),
              expand = FALSE) +
     labs(fill = "Total number\nof PECs") +
     theme(
         axis.text = element_blank(),
-        legend.background = element_rect(fill = "white"),
-        panel.background = element_rect(fill = "white"),
-        panel.grid.major = element_line(size = .3),
-        plot.background = element_rect(fill = "white"),
         plot.margin = grid::unit(rep(0, 4), "lines"))
 ggsave(file.path(path_project, "out", "map_npec.png"))
 
